@@ -1,0 +1,16 @@
+name = "ashline-trials"
+main = "src/worker.js"
+compatibility_date = "2026-04-07"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[[durable_objects.bindings]]
+name = "GHOST_ROOM"
+class_name = "GhostRoom"
+
+# new_sqlite_classes is required for Durable Objects on the Cloudflare Free plan
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["GhostRoom"]

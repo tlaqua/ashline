@@ -1,0 +1,1570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ASHLINE // Monochrome Trials Prototype</title>
+  <script src="https://cdn.jsdelivr.net/npm/planck/dist/planck.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: #070708; color: #f2f2f5;
+      font-family: 'Impact', 'Arial Narrow', 'Segoe UI', sans-serif;
+    }
+    canvas { display: block; width: 100vw; height: 100vh; }
+
+    #hud {
+      position: fixed; top: 20px; left: 24px; right: 24px;
+      display: flex; justify-content: space-between; align-items: flex-start;
+      pointer-events: none; z-index: 10;
+    }
+    .panel {
+      background: rgba(10, 10, 12, 0.85);
+      border-left: 4px solid #f2f2f5;
+      padding: 10px 18px;
+      transform: skewX(-10deg);
+      box-shadow: 6px 6px 0 rgba(255, 255, 255, 0.08);
+    }
+    .panel-inner { transform: skewX(10deg); }
+    .title {
+      font-size: 22px; letter-spacing: 4px; font-weight: 900;
+      text-transform: uppercase; color: #f2f2f5;
+    }
+    .sub {
+      font-family: monospace; font-size: 11px; letter-spacing: 1.5px;
+      color: #8f8f96; margin-top: 3px;
+    }
+    .stats { display: flex; gap: 22px; align-items: baseline; }
+    .stat-time   { width: 132px; }
+    .stat-faults { width: 58px; }
+    .stat-speed  { width: 66px; }
+    .stat-label {
+      font-family: monospace; font-size: 10px; color: #7a7a82;
+      letter-spacing: 2px; display: block;
+    }
+    .stat-val {
+      font-family: 'Courier New', Consolas, monospace;
+      font-size: 24px; font-weight: 900; letter-spacing: 0.5px;
+      font-variant-numeric: tabular-nums;
+      display: inline-block;
+    }
+
+    #banner {
+      position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+      pointer-events: none; opacity: 0; transition: opacity 0.12s ease; z-index: 20;
+    }
+    #banner.visible { opacity: 1; }
+    .banner-box {
+      background: #09090b;
+      border-top: 3px solid #f2f2f5; border-bottom: 3px solid #f2f2f5;
+      padding: 22px 56px; text-align: center;
+      transform: skewX(-10deg);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+    }
+    .banner-box > div { transform: skewX(10deg); }
+    .banner-main { font-size: 46px; letter-spacing: 6px; font-weight: 900; }
+    .banner-sub {
+      font-family: monospace; font-size: 13px; letter-spacing: 2px;
+      color: #b0b0b8; margin-top: 8px;
+    }
+
+    #controls-hint {
+      position: fixed; bottom: 18px; left: 24px;
+      font-family: monospace; font-size: 11px; letter-spacing: 1.2px;
+      color: #7c7c85; pointer-events: none;
+      background: rgba(7,7,8,0.72); padding: 6px 12px;
+      border-left: 2px solid #55555c;
+    }
+    b { color: #e5e5ea; }
+  </style>
+</head>
+<body>
+  <div id="hud">
+    <div class="panel">
+      <div class="panel-inner">
+        <div class="title">ASHLINE // 01</div>
+        <div class="sub" id="ui-net">CONNECTING TO LAB ROOM...</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-inner stats">
+        <div class="stat-time"><span class="stat-label">TIME</span><span class="stat-val" id="ui-time">00:00.00</span></div>
+        <div class="stat-faults"><span class="stat-label">FAULTS</span><span class="stat-val" id="ui-faults">0</span></div>
+        <div class="stat-speed"><span class="stat-label">KM/H</span><span class="stat-val" id="ui-speed">0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="banner">
+    <div class="banner-box">
+      <div>
+        <div class="banner-main" id="banner-title">BAILED</div>
+        <div class="banner-sub" id="banner-sub">[SPACE / BKSP] CHECKPOINT &nbsp;//&nbsp; [R / DEL] FULL RESTART</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="controls-hint">
+    <b>W / ↑</b> GAS &nbsp;·&nbsp; <b>S / ↓</b> BRAKE / REV &nbsp;·&nbsp; <b>A / ←</b> LEAN BACK &nbsp;·&nbsp; <b>D / →</b> LEAN FWD &nbsp;·&nbsp; <b>SPACE / BKSP</b> CHECKPOINT &nbsp;·&nbsp; <b>R / DEL</b> RESTART
+  </div>
+
+  <canvas id="game"></canvas>
+
+<script>
+(() => {
+  // ============================================================================
+  // MASTER TUNING & CONFIGURATION (Adjust everything here during testing)
+  // ============================================================================
+  const CONFIG = {
+    controls: {
+      gas:        ['KeyW', 'ArrowUp'],
+      brake:      ['KeyS', 'ArrowDown'],
+      leanBack:   ['KeyA', 'ArrowLeft'],
+      leanFwd:    ['KeyD', 'ArrowRight'],
+      restart:    ['KeyR', 'Delete'],
+      checkpoint: ['Space', 'Backspace']
+    },
+
+    multiplayer: {
+      enabled:           true,
+      sendHz:            10,    // Updates/sec while riding (10Hz stays well inside CF Free Tier)
+      idleSendMs:        1000,  // Heartbeat rate when parked
+      interpSpeed:       18,    // Ghost smoothing speed
+      snapDistance:      4.5,   // Teleport immediately on checkpoint/restart instead of sliding
+      ghostTimeoutMs:    4500,  // Remove ghost if silent for 4.5s
+      trailLength:       28,    // Segments per technicolor tracer ribbon
+      trailSampleDist:   0.18,  // Min meters moved before pushing new tracer node
+      ghostFillAlpha:    0.34,  // Translucent neon ghost body fill
+      ghostStrokeAlpha:  0.88,  // Bright neon ghost rim & limb stroke
+      tracerWidth:       0.12,  // Tracer ribbon core width (meters)
+      chromaticShiftDeg: 58,    // Hue offset between helmet, front wheel & rear wheel tracers
+      crashBurstCount:   20     // Technicolor confetti shards when a friend bails
+    },
+
+    physics: {
+      gravityY:           -24,
+      fixedDt:            1 / 120,
+      maxFrameDt:         0.05,
+      velocityIterations: 10,
+      positionIterations: 4,
+      terrainFriction:    1.35,
+      terrainRestitution: 0.0,
+      obstacleFriction:   1.4,
+      obstacleRestitution:0.02
+    },
+
+    bike: {
+      chassisDensity:        4.2,
+      chassisFriction:       0.25,
+      chassisRestitution:    0.05,
+      chassisAngularDamping: 1.4,
+      chassisLinearDamping:  0.08,
+
+      wheelRadius:         0.43,
+      wheelDensity:        1.2,
+      wheelFriction:       1.7,
+      wheelRestitution:    0.05,
+      wheelAngularDamping: 0.35,
+      rearWheelOffset:     { x: -0.78, y: -0.38 },
+      frontWheelOffset:    { x:  0.84, y: -0.38 }
+    },
+
+    suspension: {
+      rearHz:            7.2,
+      rearDamping:       0.76,
+      rearAxis:          { x: 0.16, y: 1.0 },
+
+      frontHz:           6.6,
+      frontDamping:      0.76,
+      frontAxis:         { x: -0.28, y: 1.0 },
+
+      maxExtend:         0.08,
+      maxCompress:       0.20,
+      bumpStopStiffness: 950,
+      bumpStopDamping:   45
+    },
+
+    drivetrain: {
+      gasMotorSpeed:      -44,
+      gasMaxTorque:        68,
+      frontFreewheelDrag:  0.35,
+
+      brakeRearTorque:     52,
+      brakeFrontTorque:    44,
+
+      reverseEngageSpeed:  0.65,
+      reverseMotorSpeed:   7.5,
+      reverseMaxTorque:    38,
+
+      coastRearDrag:       1.4,
+      coastFrontDrag:      0.25
+    },
+
+    rider: {
+      offset:           { x: -0.14, y: 0.72 },
+      jointOffset:      { x: -0.16, y: 0.32 },
+      torsoDensity:     0.95,
+      headDensity:      0.55,
+      headRestitution:  0.25,
+      angularDamping:   0.8,
+      maxJointAngleRad: 0.68,
+      jointMaxTorque:   38,
+      crashImpulseY:    6
+    },
+
+    handling: {
+      leanSmoothing:          14,
+      riderTargetLeanRad:     0.60,
+      riderJointGain:         18,
+      riderJointMaxSpeed:     14,
+
+      pitchTorqueGrounded:    48,
+      stationaryWheelieBoost: 24,
+      pitchTorqueAir:         36,
+      neutralAngularDamping:  4.2,
+
+      pumpSensitivity:        0.85,
+      pumpImpulseY:           1.45,
+
+      unpinchDelay:           0.14,
+      unpinchSpeedThreshold:  1.1,
+      unpinchLiftForce:       55,
+      unpinchPullForce:       28
+    },
+
+    camera: {
+      initialX:      3,
+      initialY:      2.5,
+      initialZoom:   34,
+      baseZoom:      36,
+      minZoom:       25,
+      maxZoom:       36,
+      speedZoomOut:  0.45,
+      zoomLerp:      0.06,
+      lookAheadX:    0.22,
+      lookAheadY:    0.08,
+      offsetX:       3.2,
+      offsetY:       1.4,
+      lerpX:         0.09,
+      lerpY:         0.08,
+      screenAnchorX: 0.42,
+      screenAnchorY: 0.62
+    },
+
+    visuals: {
+      maxDpr:            2.5,
+      grainAlpha:        14,
+      dustLandingRear:   4,
+      dustLandingFront:  3,
+      dustCrashCount:    16,
+      dustGasChance:     0.35,
+      dustGravity:       14
+    },
+
+    palette: {
+      skyTop:         '#070709',
+      skyMid:         '#141417',
+      skyBottom:      '#1d1d21',
+      skylineFarFill: '#0c0c0e',
+      skylineFarEdge: '#1b1b1f',
+      skylineMidFill: '#111114',
+      skylineMidEdge: '#28282e',
+      trackFill:      '#0a0a0c',
+      trackHatch:     '#17171b',
+      trackBevel:     '#2d2d33',
+      trackRim:       '#ededf2',
+      pipeOuter:      '#18181c',
+      pipeMid:        '#2b2b31',
+      pipeCore:       '#09090b',
+      pipeRim:        '#e5e5eb',
+      tire:           '#09090b',
+      tread:          '#2c2c32',
+      rim:            '#d8d8e0',
+      spokes:         '#6f6f78',
+      rotor:          '#a0a0aa',
+      swingarm:       '#8b8b94',
+      forkStanchion:  '#d4d4dc',
+      forkSlider:     '#38383f',
+      engine:         '#242429',
+      exhaust:        '#75757e',
+      fairing:        '#ededf3',
+      seat:           '#0a0a0c',
+      bars:           '#f2f2f5',
+      riderLegs:      '#18181c',
+      riderTorso:     '#d8d8e0',
+      riderStripe:    '#09090b',
+      riderArms:      '#f2f2f5',
+      helmet:         '#09090b',
+      visor:          '#f2f2f5',
+      goggles:        '#a0a0aa'
+    }
+  };
+
+  // ============================================================================
+  // COURSE / TRACK LAYOUT (~360m Extended Test Track)
+  // ============================================================================
+  const TRACK_VERTS = [
+    [-16, 12], [-12, 0], [14, 0],
+    [22, 2.8], [24.5, 3.8], [24.5, -14],
+    [30.5, -14], [30.5, 2.3], [36, 0.3], [44, 0.0],
+    [58, 0.0],
+    [66, 2.2], [72, 5.6], [72, -16],
+    [81, -16], [81, 4.4], [91, -0.5], [98, -1.6],
+    [104, -1.6], [104.35, -1.15], [108.5, -1.15], [108.85, -0.65], [113.5, -0.65],
+    [122, 4.4], [126, 4.4],
+    [136, 0.2], [144, 0.0],
+    [149, 1.3], [153, 1.5], [158, 0.0],
+    [163, 1.6], [167, 1.8], [172, 0.2], [178, 0.2],
+    [185, 2.8], [189, 4.0], [189, -15],
+    [196.5, -15], [196.5, 2.8], [206, -1.2], [214, -1.5],
+    [246, -1.5],
+    [246.3, -1.10], [250.5, -1.10], [250.8, -0.68], [255.0, -0.68], [255.3, -0.25], [259.5, -0.25],
+    [269, 4.8], [274, 4.8],
+    [288, -3.5], [295, -4.5],
+    [304, -1.5], [310, 2.2], [310, -20],
+    [322, -20], [322, 1.0], [334, -3.8], [344, -4.2], [372, -4.2], [374, 10]
+  ];
+
+  const OBSTACLES = [
+    { type: 'pipe', x: 45.2, y: 0.12, r: 0.52 },
+    { type: 'pipe', x: 48.8, y: 0.20, r: 0.58 },
+    { type: 'pipe', x: 52.4, y: 0.14, r: 0.50 },
+    { type: 'pipe', x: 55.9, y: 0.24, r: 0.60 },
+    { type: 'box',  x: 100.5, y: -1.15, w: 3.4, h: 0.65, angle: 0.16 },
+    { type: 'box',  x: 218.5, y: -1.10, w: 4.2, h: 0.55, angle: 0.22 },
+    { type: 'pipe', x: 224.0, y: -1.36, r: 0.52 },
+    { type: 'box',  x: 229.5, y: -0.95, w: 4.8, h: 0.70, angle: 0.05 },
+    { type: 'pipe', x: 236.5, y: -1.32, r: 0.55 },
+    { type: 'pipe', x: 240.0, y: -1.24, r: 0.60 }
+  ];
+
+  const CHECKPOINTS = [
+    { x: 3,   groundY: 0.0 },
+    { x: 38,  groundY: 0.225 },
+    { x: 84,  groundY: 2.93 },
+    { x: 124, groundY: 4.4 },
+    { x: 175, groundY: 0.2 },
+    { x: 212, groundY: -1.425 },
+    { x: 272, groundY: 4.8 }
+  ];
+  const FINISH_X = 352;
+  const FINISH_Y = -4.2;
+
+  const GRAFFITI_TAGS = [
+    { x: 18,  y:  0.3, text: 'SEND',      scale: 1.3, rot: -0.25 },
+    { x: 65,  y:  1.0, text: 'NO BRAKES', scale: 0.9, rot: -0.45 },
+    { x: 90,  y:  0.2, text: 'DROP',      scale: 1.4, rot:  0.42 },
+    { x: 118, y:  1.5, text: 'CLIMB//',   scale: 1.1, rot: -0.52 },
+    { x: 162, y: -0.8, text: 'WHOOPS',    scale: 1.2, rot:  0.0 },
+    { x: 228, y: -3.2, text: 'TECH//02',  scale: 1.3, rot:  0.0 },
+    { x: 263, y:  1.0, text: 'GRIP',      scale: 1.3, rot: -0.48 },
+    { x: 303, y: -4.8, text: 'BIG AIR',   scale: 1.5, rot: -0.32 },
+    { x: 349, y: -5.8, text: 'FIN',       scale: 1.6, rot:  0.0 }
+  ];
+
+  const SKYLINE = Array.from({ length: 64 }, (_, i) => ({
+    x: i * 18 - 40,
+    w: 8 + ((i * 37) % 14),
+    h: 14 + ((i * 53) % 28),
+    layer: i % 2,
+    slant: ((i % 3) - 1) * 1.4,
+    hasTag: i % 3 === 0,
+    hasTruss: i % 4 === 1
+  }));
+
+  // ============================================================================
+  // ENGINE SETUP
+  // ============================================================================
+  const pl = planck;
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+
+  let viewW = window.innerWidth, viewH = window.innerHeight, dpr = 1;
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, CONFIG.visuals.maxDpr);
+    viewW = window.innerWidth;
+    viewH = window.innerHeight;
+    canvas.width = Math.floor(viewW * dpr);
+    canvas.height = Math.floor(viewH * dpr);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function createGrainPattern() {
+    const c = document.createElement('canvas');
+    c.width = 128; c.height = 128;
+    const g = c.getContext('2d');
+    const img = g.createImageData(128, 128);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const v = (Math.random() * 255) | 0;
+      img.data[i] = img.data[i+1] = img.data[i+2] = v;
+      img.data[i+3] = CONFIG.visuals.grainAlpha;
+    }
+    g.putImageData(img, 0, 0);
+    return ctx.createPattern(c, 'repeat');
+  }
+  const grainPattern = createGrainPattern();
+
+  // --- Input Handling ---
+  const keys = { gas: false, brake: false, back: false, fwd: false };
+  const keyLookup = {};
+  for (const code of CONFIG.controls.gas)      keyLookup[code] = 'gas';
+  for (const code of CONFIG.controls.brake)    keyLookup[code] = 'brake';
+  for (const code of CONFIG.controls.leanBack) keyLookup[code] = 'back';
+  for (const code of CONFIG.controls.leanFwd)  keyLookup[code] = 'fwd';
+
+  window.addEventListener('keydown', (e) => {
+    if (keyLookup[e.code]) { e.preventDefault(); keys[keyLookup[e.code]] = true; }
+    if (CONFIG.controls.restart.includes(e.code))    { e.preventDefault(); resetFullRun(); }
+    if (CONFIG.controls.checkpoint.includes(e.code)) { e.preventDefault(); respawnCheckpoint(); }
+  });
+  window.addEventListener('keyup', (e) => {
+    if (keyLookup[e.code]) keys[keyLookup[e.code]] = false;
+  });
+
+  // --- Game State ---
+  let world, chassis, rearWheel, frontWheel, riderBody;
+  let rearJoint, frontJoint, riderJoint;
+  let rearRestLocal, frontRestLocal, rearAxisUnit, frontAxisUnit;
+  let rearContacts = 0, frontContacts = 0;
+  let crashed = false, pendingCrash = false, finished = false;
+  let currentCheckpoint = 0, faults = 0, runTime = 0, timerStarted = false;
+  let unpinchTimer = 0;
+  let particles = [];
+  let camX = CONFIG.camera.initialX;
+  let camY = CONFIG.camera.initialY;
+  let camZoom = CONFIG.camera.initialZoom;
+
+  const uiTime = document.getElementById('ui-time');
+  const uiFaults = document.getElementById('ui-faults');
+  const uiSpeed = document.getElementById('ui-speed');
+  const uiNet = document.getElementById('ui-net');
+  const banner = document.getElementById('banner');
+  const bannerTitle = document.getElementById('banner-title');
+  const bannerSub = document.getElementById('banner-sub');
+
+  // ============================================================================
+  // MULTIPLAYER GHOST NETWORKING (WebSocket + Binary Pose Sync)
+  // ============================================================================
+  const ghosts = new Map();
+  let ws = null;
+  let onlineCount = 1;
+  let lastSendTime = 0;
+  let lastSentX = 0, lastSentY = 0, lastSentAng = 0;
+  const txBuffer = new Float32Array(13);
+
+  function connectMultiplayer() {
+    if (!CONFIG.multiplayer.enabled || location.protocol === 'file:') {
+      uiNet.textContent = 'SOLO MODE // LOCAL FILE';
+      return;
+    }
+
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const room = new URLSearchParams(location.search).get('room') || 'lab-main';
+    const url = `${proto}//${location.host}/ws${room ? `?room=${encodeURIComponent(room)}` : ''}`;
+
+    try {
+      ws = new WebSocket(url);
+      ws.binaryType = 'arraybuffer';
+    } catch {
+      uiNet.textContent = 'SOLO MODE // OFFLINE';
+      return;
+    }
+
+    ws.onopen = () => {
+      uiNet.textContent = `ROOM: ${room.toUpperCase()} // CONNECTED`;
+    };
+
+    ws.onmessage = (event) => {
+      if (typeof event.data === 'string') {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'welcome' || msg.type === 'count') {
+            onlineCount = msg.count || 1;
+            uiNet.textContent = `ROOM: ${room.toUpperCase()} // ${onlineCount} RIDERS LIVE`;
+          } else if (msg.type === 'leave') {
+            ghosts.delete(msg.id);
+            onlineCount = msg.count || 1;
+            uiNet.textContent = `ROOM: ${room.toUpperCase()} // ${onlineCount} RIDERS LIVE`;
+          }
+        } catch {}
+        return;
+      }
+
+      if (event.data instanceof ArrayBuffer && event.data.byteLength === 56) {
+        const dv = new DataView(event.data);
+        const id = dv.getUint16(0, true);
+        const hue = dv.getUint16(2, true);
+        const pose = new Float32Array(event.data, 4, 13);
+        const now = performance.now();
+
+        let g = ghosts.get(id);
+        if (!g) {
+          g = {
+            id,
+            hue,
+            cur: new Float32Array(pose),
+            target: new Float32Array(pose),
+            trail: [],
+            wasCrashed: false,
+            lastSeen: now
+          };
+          ghosts.set(id, g);
+        } else {
+          const jumpDist = Math.hypot(pose[0] - g.cur[0], pose[1] - g.cur[1]);
+          g.hue = hue;
+          g.target.set(pose);
+          g.lastSeen = now;
+          // Snap cleanly if friend respawned at a checkpoint or restarted
+          if (jumpDist > CONFIG.multiplayer.snapDistance) {
+            g.cur.set(pose);
+            g.trail.length = 0;
+          }
+        }
+
+        const isCrashed = (Math.round(pose[12]) & 1) !== 0;
+        if (isCrashed && !g.wasCrashed) {
+          spawnTechnicolorBurst({ x: pose[9], y: pose[10] }, hue);
+        }
+        g.wasCrashed = isCrashed;
+      }
+    };
+
+    ws.onclose = () => {
+      uiNet.textContent = 'DISCONNECTED // RECONNECTING...';
+      ghosts.clear();
+      setTimeout(connectMultiplayer, 2500);
+    };
+  }
+
+  function sendLocalPose(now) {
+    if (!ws || ws.readyState !== WebSocket.OPEN || !chassis) return;
+    const minMs = 1000 / CONFIG.multiplayer.sendHz;
+    if (now - lastSendTime < minMs) return;
+
+    const cp = chassis.getPosition();
+    const ca = chassis.getAngle();
+    const moved = Math.abs(cp.x - lastSentX) + Math.abs(cp.y - lastSentY) + Math.abs(ca - lastSentAng);
+    if (moved < 0.004 && now - lastSendTime < CONFIG.multiplayer.idleSendMs) return;
+
+    const rw = rearWheel.getPosition();
+    const fw = frontWheel.getPosition();
+    const rd = riderBody.getPosition();
+
+    txBuffer[0]  = cp.x;
+    txBuffer[1]  = cp.y;
+    txBuffer[2]  = ca;
+    txBuffer[3]  = rw.x;
+    txBuffer[4]  = rw.y;
+    txBuffer[5]  = rearWheel.getAngle();
+    txBuffer[6]  = fw.x;
+    txBuffer[7]  = fw.y;
+    txBuffer[8]  = frontWheel.getAngle();
+    txBuffer[9]  = rd.x;
+    txBuffer[10] = rd.y;
+    txBuffer[11] = riderBody.getAngle();
+    txBuffer[12] = (crashed ? 1 : 0) | (finished ? 2 : 0);
+
+    try {
+      ws.send(txBuffer.buffer);
+      lastSendTime = now;
+      lastSentX = cp.x;
+      lastSentY = cp.y;
+      lastSentAng = ca;
+    } catch {}
+  }
+
+  function normVec(v) {
+    const len = Math.hypot(v.x, v.y) || 1;
+    return pl.Vec2(v.x / len, v.y / len);
+  }
+
+  function buildWorld(cp) {
+    world = new pl.World({ gravity: pl.Vec2(0, CONFIG.physics.gravityY) });
+    rearContacts = 0; frontContacts = 0;
+    crashed = false; pendingCrash = false; finished = false;
+    unpinchTimer = 0;
+    banner.classList.remove('visible');
+
+    const terrainBody = world.createBody();
+    const chain = new pl.Chain(TRACK_VERTS.map(([x, y]) => pl.Vec2(x, y)), false);
+    const tf = terrainBody.createFixture(chain, {
+      friction: CONFIG.physics.terrainFriction,
+      restitution: CONFIG.physics.terrainRestitution
+    });
+    tf.setUserData('terrain');
+
+    for (const ob of OBSTACLES) {
+      const b = world.createBody({ position: pl.Vec2(ob.x, ob.y), angle: ob.angle || 0 });
+      const shape = ob.type === 'pipe' ? new pl.Circle(ob.r) : new pl.Box(ob.w / 2, ob.h / 2);
+      const f = b.createFixture(shape, {
+        friction: CONFIG.physics.obstacleFriction,
+        restitution: CONFIG.physics.obstacleRestitution
+      });
+      f.setUserData('terrain');
+    }
+
+    const sx = cp.x, sy = cp.groundY + 1.45;
+
+    chassis = world.createDynamicBody({
+      position: pl.Vec2(sx, sy),
+      angularDamping: CONFIG.bike.chassisAngularDamping,
+      linearDamping: CONFIG.bike.chassisLinearDamping
+    });
+    const framePoly = new pl.Polygon([
+      pl.Vec2(-0.46, -0.05),
+      pl.Vec2( 0.36, -0.04),
+      pl.Vec2( 0.42,  0.34),
+      pl.Vec2(-0.42,  0.28)
+    ]);
+    const frameFix = chassis.createFixture(framePoly, {
+      density: CONFIG.bike.chassisDensity,
+      friction: CONFIG.bike.chassisFriction,
+      restitution: CONFIG.bike.chassisRestitution,
+      filterGroupIndex: -1
+    });
+    frameFix.setUserData('chassis');
+
+    const wheelOpts = {
+      density: CONFIG.bike.wheelDensity,
+      friction: CONFIG.bike.wheelFriction,
+      restitution: CONFIG.bike.wheelRestitution,
+      filterGroupIndex: -1
+    };
+    rearRestLocal = pl.Vec2(CONFIG.bike.rearWheelOffset.x, CONFIG.bike.rearWheelOffset.y);
+    frontRestLocal = pl.Vec2(CONFIG.bike.frontWheelOffset.x, CONFIG.bike.frontWheelOffset.y);
+    rearAxisUnit = normVec(CONFIG.suspension.rearAxis);
+    frontAxisUnit = normVec(CONFIG.suspension.frontAxis);
+
+    rearWheel = world.createDynamicBody({
+      position: pl.Vec2(sx + rearRestLocal.x, sy + rearRestLocal.y),
+      angularDamping: CONFIG.bike.wheelAngularDamping
+    });
+    const rwFix = rearWheel.createFixture(new pl.Circle(CONFIG.bike.wheelRadius), wheelOpts);
+    rwFix.setUserData('rearWheel');
+
+    frontWheel = world.createDynamicBody({
+      position: pl.Vec2(sx + frontRestLocal.x, sy + frontRestLocal.y),
+      angularDamping: CONFIG.bike.wheelAngularDamping
+    });
+    const fwFix = frontWheel.createFixture(new pl.Circle(CONFIG.bike.wheelRadius), wheelOpts);
+    fwFix.setUserData('frontWheel');
+
+    rearJoint = world.createJoint(new pl.WheelJoint({
+      motorSpeed: 0,
+      maxMotorTorque: CONFIG.drivetrain.gasMaxTorque,
+      enableMotor: true,
+      frequencyHz: CONFIG.suspension.rearHz,
+      dampingRatio: CONFIG.suspension.rearDamping
+    }, chassis, rearWheel, rearWheel.getPosition(), rearAxisUnit));
+
+    frontJoint = world.createJoint(new pl.WheelJoint({
+      motorSpeed: 0,
+      maxMotorTorque: 0,
+      enableMotor: true,
+      frequencyHz: CONFIG.suspension.frontHz,
+      dampingRatio: CONFIG.suspension.frontDamping
+    }, chassis, frontWheel, frontWheel.getPosition(), frontAxisUnit));
+
+    riderBody = world.createDynamicBody({
+      position: pl.Vec2(sx + CONFIG.rider.offset.x, sy + CONFIG.rider.offset.y),
+      angularDamping: CONFIG.rider.angularDamping
+    });
+    const torsoFix = riderBody.createFixture(new pl.Box(0.16, 0.34), {
+      density: CONFIG.rider.torsoDensity, friction: 0.4, filterGroupIndex: -1
+    });
+    torsoFix.setUserData('fatal');
+
+    const headFix = riderBody.createFixture(new pl.Circle(pl.Vec2(0.06, 0.48), 0.21), {
+      density: CONFIG.rider.headDensity,
+      friction: 0.5,
+      restitution: CONFIG.rider.headRestitution,
+      filterGroupIndex: -1
+    });
+    headFix.setUserData('fatal');
+
+    riderJoint = world.createJoint(new pl.RevoluteJoint({
+      lowerAngle: -CONFIG.rider.maxJointAngleRad,
+      upperAngle: CONFIG.rider.maxJointAngleRad,
+      enableLimit: true,
+      enableMotor: true,
+      maxMotorTorque: CONFIG.rider.jointMaxTorque,
+      motorSpeed: 0
+    }, chassis, riderBody, pl.Vec2(sx + CONFIG.rider.jointOffset.x, sy + CONFIG.rider.jointOffset.y)));
+
+    world.on('begin-contact', (contact) => {
+      const fA = contact.getFixtureA(), fB = contact.getFixtureB();
+      const uA = fA.getUserData(), uB = fB.getUserData();
+      if ((uA === 'fatal' && uB === 'terrain') || (uB === 'fatal' && uA === 'terrain')) {
+        if (!crashed && !finished) pendingCrash = true;
+      }
+      if ((uA === 'rearWheel' && uB === 'terrain') || (uB === 'rearWheel' && uA === 'terrain')) {
+        rearContacts++;
+        spawnDust(rearWheel.getPosition(), CONFIG.visuals.dustLandingRear, 2.5);
+      }
+      if ((uA === 'frontWheel' && uB === 'terrain') || (uB === 'frontWheel' && uA === 'terrain')) {
+        frontContacts++;
+        spawnDust(frontWheel.getPosition(), CONFIG.visuals.dustLandingFront, 2.0);
+      }
+    });
+
+    world.on('end-contact', (contact) => {
+      const uA = contact.getFixtureA().getUserData();
+      const uB = contact.getFixtureB().getUserData();
+      if ((uA === 'rearWheel' && uB === 'terrain') || (uB === 'rearWheel' && uA === 'terrain')) {
+        rearContacts = Math.max(0, rearContacts - 1);
+      }
+      if ((uA === 'frontWheel' && uB === 'terrain') || (uB === 'frontWheel' && uA === 'terrain')) {
+        frontContacts = Math.max(0, frontContacts - 1);
+      }
+    });
+  }
+
+  function applySuspensionLimits(wheel, restLocal, axisLocal) {
+    const restWorld = chassis.getWorldPoint(restLocal);
+    const axisWorld = chassis.getWorldVector(axisLocal);
+    const wPos = wheel.getPosition();
+
+    const travel = (wPos.x - restWorld.x) * axisWorld.x + (wPos.y - restWorld.y) * axisWorld.y;
+
+    const cCenter = chassis.getWorldCenter();
+    const cVel = chassis.getLinearVelocity();
+    const cAng = chassis.getAngularVelocity();
+    const rx = wPos.x - cCenter.x, ry = wPos.y - cCenter.y;
+    const cVelAtW_x = cVel.x - cAng * ry;
+    const cVelAtW_y = cVel.y + cAng * rx;
+    const wVel = wheel.getLinearVelocity();
+    const relVel = (wVel.x - cVelAtW_x) * axisWorld.x + (wVel.y - cVelAtW_y) * axisWorld.y;
+
+    let forceMag = 0;
+    if (travel < -CONFIG.suspension.maxExtend) {
+      const overshoot = travel + CONFIG.suspension.maxExtend;
+      forceMag = -overshoot * CONFIG.suspension.bumpStopStiffness - relVel * CONFIG.suspension.bumpStopDamping;
+      if (forceMag < 0) forceMag = 0;
+    } else if (travel > CONFIG.suspension.maxCompress) {
+      const overshoot = travel - CONFIG.suspension.maxCompress;
+      forceMag = -overshoot * CONFIG.suspension.bumpStopStiffness - relVel * CONFIG.suspension.bumpStopDamping;
+      if (forceMag > 0) forceMag = 0;
+    }
+
+    if (forceMag !== 0) {
+      const fx = axisWorld.x * forceMag;
+      const fy = axisWorld.y * forceMag;
+      wheel.applyForce(pl.Vec2(fx, fy), wPos, true);
+      chassis.applyForce(pl.Vec2(-fx, -fy), wPos, true);
+    }
+  }
+
+  function triggerCrash() {
+    if (crashed || finished) return;
+    crashed = true;
+    if (riderJoint) {
+      world.destroyJoint(riderJoint);
+      riderJoint = null;
+    }
+    riderBody.applyLinearImpulse(pl.Vec2(0, CONFIG.rider.crashImpulseY), riderBody.getWorldCenter(), true);
+    spawnDust(riderBody.getPosition(), CONFIG.visuals.dustCrashCount, 5.5);
+    bannerTitle.textContent = 'BAILED';
+    bannerSub.textContent = '[SPACE / BKSP] CHECKPOINT (+1 FAULT)  //  [R / DEL] FULL RESTART';
+    banner.classList.add('visible');
+  }
+
+  function respawnCheckpoint() {
+    if (finished) { resetFullRun(); return; }
+    faults++;
+    particles = [];
+    buildWorld(CHECKPOINTS[currentCheckpoint]);
+  }
+
+  function resetFullRun() {
+    currentCheckpoint = 0;
+    faults = 0;
+    runTime = 0;
+    timerStarted = false;
+    particles = [];
+    buildWorld(CHECKPOINTS[0]);
+  }
+
+  function spawnDust(pos, count, speed) {
+    for (let i = 0; i < count; i++) {
+      const a = Math.random() * Math.PI;
+      const s = (0.4 + Math.random() * 0.8) * speed;
+      particles.push({
+        x: pos.x + (Math.random() - 0.5) * 0.3,
+        y: pos.y - 0.25 + (Math.random() - 0.5) * 0.2,
+        vx: Math.cos(a) * s - 1.5,
+        vy: Math.sin(a) * s,
+        life: 0.35 + Math.random() * 0.45,
+        maxLife: 0.8,
+        size: 0.06 + Math.random() * 0.14,
+        rot: Math.random() * Math.PI * 2,
+        shade: 160 + ((Math.random() * 85) | 0)
+      });
+    }
+  }
+
+  function spawnTechnicolorBurst(pos, baseHue) {
+    for (let i = 0; i < CONFIG.multiplayer.crashBurstCount; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const s = 2.0 + Math.random() * 6.5;
+      particles.push({
+        x: pos.x,
+        y: pos.y,
+        vx: Math.cos(a) * s,
+        vy: Math.sin(a) * s + 2.5,
+        life: 0.45 + Math.random() * 0.55,
+        maxLife: 1.0,
+        size: 0.09 + Math.random() * 0.16,
+        rot: Math.random() * Math.PI * 2,
+        hue: (baseHue + Math.random() * 140 - 70 + 360) % 360
+      });
+    }
+  }
+
+  // --- Physics Step ---
+  let accumulator = 0;
+  let lastTime = performance.now();
+  let lastRenderTime = lastTime;
+  let leanSmooth = 0;
+
+  function stepPhysics(dt) {
+    if (keys.gas || keys.brake || keys.back || keys.fwd) timerStarted = true;
+    if (timerStarted && !crashed && !finished) runTime += dt;
+
+    if (!crashed && !finished) {
+      const cVel = chassis.getLinearVelocity();
+      const speed = cVel.length();
+
+      if (keys.brake) {
+        if (cVel.x > CONFIG.drivetrain.reverseEngageSpeed || rearWheel.getAngularVelocity() < -1.8) {
+          rearJoint.setMaxMotorTorque(CONFIG.drivetrain.brakeRearTorque);
+          rearJoint.setMotorSpeed(0);
+          frontJoint.setMaxMotorTorque(CONFIG.drivetrain.brakeFrontTorque);
+          frontJoint.setMotorSpeed(0);
+        } else {
+          rearJoint.setMaxMotorTorque(CONFIG.drivetrain.reverseMaxTorque);
+          rearJoint.setMotorSpeed(CONFIG.drivetrain.reverseMotorSpeed);
+          frontJoint.setMaxMotorTorque(CONFIG.drivetrain.coastFrontDrag);
+          frontJoint.setMotorSpeed(0);
+        }
+      } else if (keys.gas) {
+        rearJoint.setMaxMotorTorque(CONFIG.drivetrain.gasMaxTorque);
+        rearJoint.setMotorSpeed(CONFIG.drivetrain.gasMotorSpeed);
+        frontJoint.setMaxMotorTorque(CONFIG.drivetrain.frontFreewheelDrag);
+        frontJoint.setMotorSpeed(0);
+        if (rearContacts > 0 && Math.random() < CONFIG.visuals.dustGasChance) {
+          spawnDust({ x: rearWheel.getPosition().x - 0.2, y: rearWheel.getPosition().y }, 1, 2.2);
+        }
+      } else {
+        rearJoint.setMaxMotorTorque(CONFIG.drivetrain.coastRearDrag);
+        rearJoint.setMotorSpeed(0);
+        frontJoint.setMaxMotorTorque(CONFIG.drivetrain.coastFrontDrag);
+        frontJoint.setMotorSpeed(0);
+      }
+
+      const rawLean = (keys.back ? 1 : 0) - (keys.fwd ? 1 : 0);
+      const prevLean = leanSmooth;
+      leanSmooth += (rawLean - leanSmooth) * CONFIG.handling.leanSmoothing * dt;
+
+      if (riderJoint) {
+        const targetAngle = leanSmooth * CONFIG.handling.riderTargetLeanRad;
+        const err = targetAngle - riderJoint.getJointAngle();
+        const spd = Math.max(
+          -CONFIG.handling.riderJointMaxSpeed,
+          Math.min(CONFIG.handling.riderJointMaxSpeed, err * CONFIG.handling.riderJointGain)
+        );
+        riderJoint.setMotorSpeed(spd);
+      }
+
+      const grounded = (rearContacts > 0 || frontContacts > 0);
+      let pitchTorque = grounded ? CONFIG.handling.pitchTorqueGrounded : CONFIG.handling.pitchTorqueAir;
+      if (keys.back && rearContacts > 0 && speed < 2.5) {
+        pitchTorque += CONFIG.handling.stationaryWheelieBoost;
+      }
+
+      if (rawLean !== 0) {
+        chassis.applyTorque(rawLean * pitchTorque, true);
+      } else {
+        chassis.applyTorque(-chassis.getAngularVelocity() * CONFIG.handling.neutralAngularDamping, true);
+      }
+
+      if (grounded && Math.abs(rawLean - prevLean) > CONFIG.handling.pumpSensitivity) {
+        chassis.applyLinearImpulse(pl.Vec2(0, CONFIG.handling.pumpImpulseY), chassis.getWorldCenter(), true);
+      }
+
+      if (keys.back && frontContacts > 0 && speed < CONFIG.handling.unpinchSpeedThreshold) {
+        unpinchTimer += dt;
+        if (unpinchTimer >= CONFIG.handling.unpinchDelay) {
+          const fwPos = frontWheel.getPosition();
+          const pullDir = keys.gas ? 1 : -1;
+          frontWheel.applyForce(
+            pl.Vec2(pullDir * CONFIG.handling.unpinchPullForce, CONFIG.handling.unpinchLiftForce),
+            fwPos,
+            true
+          );
+          chassis.applyForce(
+            pl.Vec2(pullDir * CONFIG.handling.unpinchPullForce * 0.4, CONFIG.handling.unpinchLiftForce * 0.4),
+            fwPos,
+            true
+          );
+        }
+      } else {
+        unpinchTimer = 0;
+      }
+
+      applySuspensionLimits(rearWheel, rearRestLocal, rearAxisUnit);
+      applySuspensionLimits(frontWheel, frontRestLocal, frontAxisUnit);
+
+      const bx = chassis.getPosition().x;
+      for (let i = currentCheckpoint + 1; i < CHECKPOINTS.length; i++) {
+        if (bx >= CHECKPOINTS[i].x) currentCheckpoint = i;
+      }
+      if (bx >= FINISH_X) {
+        finished = true;
+        bannerTitle.textContent = 'TRACK CLEARED';
+        bannerSub.textContent = `TIME ${formatTime(runTime)}  //  FAULTS ${faults}  //  [R / DEL] RIDE AGAIN`;
+        banner.classList.add('visible');
+      }
+    }
+
+    world.step(dt, CONFIG.physics.velocityIterations, CONFIG.physics.positionIterations);
+
+    if (pendingCrash) {
+      pendingCrash = false;
+      triggerCrash();
+    }
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy -= CONFIG.visuals.dustGravity * dt;
+      p.life -= dt;
+      if (p.life <= 0) particles.splice(i, 1);
+    }
+  }
+
+  function solveIK(ax, ay, bx, by, L1, L2, flipSign) {
+    const dx = bx - ax, dy = by - ay;
+    const d = Math.min(Math.max(Math.hypot(dx, dy), 0.001), (L1 + L2) * 0.995);
+    const baseAngle = Math.atan2(dy, dx);
+    const cosA = (L1 * L1 + d * d - L2 * L2) / (2 * L1 * d);
+    const bend = Math.acos(Math.max(-1, Math.min(1, cosA))) * flipSign;
+    return {
+      x: ax + Math.cos(baseAngle + bend) * L1,
+      y: ay + Math.sin(baseAngle + bend) * L1
+    };
+  }
+
+  function localToWorld(px, py, ang, lx, ly) {
+    const c = Math.cos(ang), s = Math.sin(ang);
+    return { x: px + lx * c - ly * s, y: py + lx * s + ly * c };
+  }
+
+  function lerpAngle(a, b, t) {
+    let diff = (b - a) % (Math.PI * 2);
+    if (diff > Math.PI) diff -= Math.PI * 2;
+    if (diff < -Math.PI) diff += Math.PI * 2;
+    return a + diff * t;
+  }
+
+  // --- Renderer ---
+  function render(now) {
+    const renderDt = Math.min((now - lastRenderTime) / 1000, 0.05);
+    lastRenderTime = now;
+
+    const P = CONFIG.palette;
+    const C = CONFIG.camera;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, viewH);
+    bgGrad.addColorStop(0, P.skyTop);
+    bgGrad.addColorStop(0.6, P.skyMid);
+    bgGrad.addColorStop(1, P.skyBottom);
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, viewW, viewH);
+
+    const pos = chassis.getPosition();
+    const vel = chassis.getLinearVelocity();
+    const speed = vel.length();
+    const targetZoom = Math.max(C.minZoom, Math.min(C.maxZoom, C.baseZoom - speed * C.speedZoomOut));
+    camZoom += (targetZoom - camZoom) * C.zoomLerp;
+    camX += (pos.x + vel.x * C.lookAheadX + C.offsetX - camX) * C.lerpX;
+    camY += (pos.y + vel.y * C.lookAheadY + C.offsetY - camY) * C.lerpY;
+
+    drawSkyline();
+
+    ctx.save();
+    ctx.translate(viewW * C.screenAnchorX, viewH * C.screenAnchorY);
+    ctx.scale(camZoom, -camZoom);
+    ctx.translate(-camX, -camY);
+
+    drawObstacles();
+    drawTrack();
+    drawCheckpointsAndFinish();
+    drawGhosts(now, renderDt);
+    drawParticles();
+    drawBikeAndRider();
+
+    ctx.restore();
+
+    if (grainPattern) {
+      ctx.fillStyle = grainPattern;
+      ctx.fillRect(0, 0, viewW, viewH);
+    }
+
+    uiTime.textContent = formatTime(runTime);
+    uiFaults.textContent = faults;
+    uiSpeed.textContent = Math.round(speed * 3.6);
+  }
+
+  // --- Technicolor Ghost & Tracer Renderer ---
+  function drawGhosts(now, dt) {
+    const M = CONFIG.multiplayer;
+    const alphaLerp = 1 - Math.exp(-M.interpSpeed * dt);
+
+    for (const [id, g] of ghosts) {
+      if (now - g.lastSeen > M.ghostTimeoutMs) {
+        ghosts.delete(id);
+        continue;
+      }
+
+      // Smoothly interpolate all 4 articulated rigid bodies
+      for (let i = 0; i < 12; i++) {
+        if (i === 2 || i === 5 || i === 8 || i === 11) {
+          g.cur[i] = lerpAngle(g.cur[i], g.target[i], alphaLerp);
+        } else {
+          g.cur[i] += (g.target[i] - g.cur[i]) * alphaLerp;
+        }
+      }
+
+      const cx = g.cur[0],  cy = g.cur[1],  ca = g.cur[2];
+      const rwx = g.cur[3], rwy = g.cur[4], rwa = g.cur[5];
+      const fwx = g.cur[6], fwy = g.cur[7], fwa = g.cur[8];
+      const rdx = g.cur[9], rdy = g.cur[10], rda = g.cur[11];
+      const headPos = localToWorld(rdx, rdy, rda, 0.07, 0.48);
+
+      // Record trail sample when ghost moves
+      const lastNode = g.trail[g.trail.length - 1];
+      if (!lastNode || Math.hypot(cx - lastNode.cx, cy - lastNode.cy) >= M.trailSampleDist) {
+        g.trail.push({ rwx, rwy, fwx, fwy, hx: headPos.x, hy: headPos.y, cx, cy });
+        if (g.trail.length > M.trailLength) g.trail.shift();
+      }
+
+      // 1. Technicolor Additive Vector Tracers (3 chromatic-shifted ribbons)
+      if (g.trail.length > 1) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.lineCap = 'round';
+        const ribbons = [
+          { kx: 'hx',  ky: 'hy',  hueShift: 0,                    wMul: 1.1 },
+          { kx: 'fwx', ky: 'fwy', hueShift: M.chromaticShiftDeg,  wMul: 0.9 },
+          { kx: 'rwx', ky: 'rwy', hueShift: -M.chromaticShiftDeg, wMul: 0.9 }
+        ];
+        for (const r of ribbons) {
+          for (let i = 1; i < g.trail.length; i++) {
+            const p0 = g.trail[i - 1];
+            const p1 = g.trail[i];
+            const t = i / g.trail.length;
+            const segHue = (g.hue + r.hueShift + i * 4 + 360) % 360;
+
+            // Soft outer neon aura
+            ctx.strokeStyle = `hsla(${segHue}, 100%, 60%, ${t * 0.20})`;
+            ctx.lineWidth = M.tracerWidth * 2.1 * t * r.wMul;
+            ctx.beginPath();
+            ctx.moveTo(p0[r.kx], p0[r.ky]);
+            ctx.lineTo(p1[r.kx], p1[r.ky]);
+            ctx.stroke();
+
+            // Razor-sharp bright core
+            ctx.strokeStyle = `hsla(${segHue}, 100%, 76%, ${t * 0.72})`;
+            ctx.lineWidth = M.tracerWidth * 0.55 * t * r.wMul;
+            ctx.beginPath();
+            ctx.moveTo(p0[r.kx], p0[r.ky]);
+            ctx.lineTo(p1[r.kx], p1[r.ky]);
+            ctx.stroke();
+          }
+        }
+        ctx.restore();
+      }
+
+      // 2. Articulated Neon Ghost Bike & Rider
+      const fillCol   = `hsla(${g.hue}, 100%, 58%, ${M.ghostFillAlpha})`;
+      const strokeCol = `hsla(${g.hue}, 100%, 75%, ${M.ghostStrokeAlpha})`;
+      const accentCol = `hsla(${(g.hue + 45) % 360}, 100%, 72%, 0.85)`;
+      const rad = CONFIG.bike.wheelRadius;
+
+      // Ghost Wheels
+      for (const [wx, wy, wa] of [[rwx, rwy, rwa], [fwx, fwy, fwa]]) {
+        ctx.save();
+        ctx.translate(wx, wy);
+        ctx.rotate(wa);
+        ctx.fillStyle = fillCol;
+        ctx.beginPath(); ctx.arc(0, 0, rad, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = strokeCol;
+        ctx.lineWidth = 0.055;
+        ctx.beginPath(); ctx.arc(0, 0, rad * 0.88, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath();
+        for (let i = 0; i < 3; i++) {
+          const a = (i / 3) * Math.PI;
+          ctx.moveTo(Math.cos(a) * -rad * 0.72, Math.sin(a) * -rad * 0.72);
+          ctx.lineTo(Math.cos(a) * rad * 0.72, Math.sin(a) * rad * 0.72);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Ghost Suspension
+      const pivotRear = localToWorld(cx, cy, ca, -0.32, -0.02);
+      const forkCrown = localToWorld(cx, cy, ca, 0.56, 0.34);
+      ctx.strokeStyle = strokeCol;
+      ctx.lineWidth = 0.075;
+      ctx.beginPath();
+      ctx.moveTo(pivotRear.x, pivotRear.y); ctx.lineTo(rwx, rwy);
+      ctx.moveTo(forkCrown.x, forkCrown.y); ctx.lineTo(fwx, fwy);
+      ctx.stroke();
+
+      // Ghost Fairing Silhouette
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(ca);
+      ctx.fillStyle = fillCol;
+      ctx.strokeStyle = strokeCol;
+      ctx.lineWidth = 0.04;
+      ctx.beginPath();
+      ctx.moveTo(-0.88, 0.28); ctx.lineTo(-0.25, 0.26); ctx.lineTo(0.18, 0.36);
+      ctx.lineTo(0.58, 0.44); ctx.lineTo(0.95, 0.22); ctx.lineTo(0.56, 0.30);
+      ctx.lineTo(0.15, 0.22); ctx.lineTo(-0.40, 0.14);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      // Ghost Rider IK Limbs & Body
+      const footPeg = localToWorld(cx, cy, ca, -0.18, -0.02);
+      const grip = localToWorld(cx, cy, ca, 0.40, 0.57);
+      const hip = localToWorld(rdx, rdy, rda, -0.04, -0.34);
+      const shoulder = localToWorld(rdx, rdy, rda, 0.06, 0.24);
+      const knee = solveIK(hip.x, hip.y, footPeg.x, footPeg.y, 0.38, 0.38, -1);
+      const elbow = solveIK(shoulder.x, shoulder.y, grip.x, grip.y, 0.32, 0.32, 1);
+
+      ctx.strokeStyle = strokeCol;
+      ctx.lineWidth = 0.11;
+      ctx.beginPath();
+      ctx.moveTo(hip.x, hip.y); ctx.lineTo(knee.x, knee.y); ctx.lineTo(footPeg.x, footPeg.y);
+      ctx.stroke();
+
+      ctx.save();
+      ctx.translate(rdx, rdy);
+      ctx.rotate(rda);
+      ctx.fillStyle = fillCol;
+      ctx.strokeStyle = strokeCol;
+      ctx.lineWidth = 0.04;
+      ctx.beginPath();
+      ctx.moveTo(-0.14, -0.36); ctx.lineTo(0.12, -0.36);
+      ctx.lineTo(0.18, 0.28); ctx.lineTo(-0.14, 0.28);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.strokeStyle = accentCol;
+      ctx.lineWidth = 0.085;
+      ctx.beginPath();
+      ctx.moveTo(shoulder.x, shoulder.y); ctx.lineTo(elbow.x, elbow.y); ctx.lineTo(grip.x, grip.y);
+      ctx.stroke();
+
+      ctx.save();
+      ctx.translate(headPos.x, headPos.y);
+      ctx.rotate(rda);
+      ctx.fillStyle = fillCol;
+      ctx.strokeStyle = strokeCol;
+      ctx.lineWidth = 0.045;
+      ctx.beginPath(); ctx.arc(0, 0, 0.21, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = accentCol;
+      ctx.beginPath();
+      ctx.moveTo(0.02, 0.14); ctx.lineTo(0.30, 0.11); ctx.lineTo(0.18, 0.20);
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function drawSkyline() {
+    const P = CONFIG.palette;
+    for (let layer = 0; layer < 2; layer++) {
+      const parallax = layer === 0 ? 0.18 : 0.42;
+      const baseY = viewH * (layer === 0 ? 0.78 : 0.86);
+      const fill = layer === 0 ? P.skylineFarFill : P.skylineMidFill;
+      const edge = layer === 0 ? P.skylineFarEdge : P.skylineMidEdge;
+
+      for (const b of SKYLINE) {
+        if (b.layer !== layer) continue;
+        const sx = (b.x - camX * parallax) * (layer === 0 ? 10 : 16) + viewW * 0.5;
+        const w = b.w * (layer === 0 ? 11 : 16);
+        const h = b.h * (layer === 0 ? 11 : 16);
+        if (sx + w < -60 || sx > viewW + 60) continue;
+
+        ctx.fillStyle = fill;
+        ctx.beginPath();
+        ctx.moveTo(sx, viewH);
+        ctx.lineTo(sx, baseY - h);
+        ctx.lineTo(sx + w, baseY - h + b.slant * 14);
+        ctx.lineTo(sx + w, viewH);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = edge;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(sx, baseY - h);
+        ctx.lineTo(sx + w, baseY - h + b.slant * 14);
+        ctx.stroke();
+
+        if (layer === 1 && b.hasTag) {
+          ctx.save();
+          ctx.translate(sx + w * 0.25, baseY - h * 0.55);
+          ctx.rotate(-0.18);
+          ctx.fillStyle = 'rgba(240, 240, 245, 0.07)';
+          ctx.fillRect(0, 0, w * 0.55, 6);
+          ctx.fillRect(8, 12, w * 0.35, 3);
+          ctx.restore();
+        }
+        if (layer === 1 && b.hasTruss) {
+          ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          for (let y = baseY - h + 20; y < viewH; y += 34) {
+            ctx.moveTo(sx + 6, y);
+            ctx.lineTo(sx + w - 6, y + 26);
+          }
+          ctx.stroke();
+        }
+      }
+    }
+  }
+
+  function drawTrack() {
+    const P = CONFIG.palette;
+    ctx.fillStyle = P.trackFill;
+    ctx.beginPath();
+    ctx.moveTo(TRACK_VERTS[0][0], -40);
+    for (const [x, y] of TRACK_VERTS) ctx.lineTo(x, y);
+    ctx.lineTo(TRACK_VERTS[TRACK_VERTS.length - 1][0], -40);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.save();
+    ctx.clip();
+    ctx.strokeStyle = P.trackHatch;
+    ctx.lineWidth = 0.08;
+    ctx.beginPath();
+    for (let x = -25; x < 395; x += 2.2) {
+      ctx.moveTo(x, -25);
+      ctx.lineTo(x + 12, 18);
+    }
+    ctx.stroke();
+
+    for (const tag of GRAFFITI_TAGS) {
+      ctx.save();
+      ctx.translate(tag.x, tag.y);
+      ctx.scale(1, -1);
+      ctx.rotate(-tag.rot);
+      const grad = ctx.createRadialGradient(0, 0, 0.1, 0, 0, 2.5 * tag.scale);
+      grad.addColorStop(0, 'rgba(245,245,250,0.14)');
+      grad.addColorStop(1, 'rgba(245,245,250,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(-3 * tag.scale, -2 * tag.scale, 6 * tag.scale, 4 * tag.scale);
+
+      ctx.font = `900 ${1.15 * tag.scale}px Impact, Arial Narrow, sans-serif`;
+      ctx.fillStyle = 'rgba(235, 235, 240, 0.24)';
+      ctx.fillText(tag.text, -1.6 * tag.scale, 0.4 * tag.scale);
+      ctx.restore();
+    }
+    ctx.restore();
+
+    ctx.strokeStyle = P.trackBevel;
+    ctx.lineWidth = 0.28;
+    ctx.lineCap = 'butt';
+    ctx.beginPath();
+    for (let i = 0; i < TRACK_VERTS.length; i++) {
+      const [x, y] = TRACK_VERTS[i];
+      if (i === 0) ctx.moveTo(x, y - 0.14);
+      else ctx.lineTo(x, y - 0.14);
+    }
+    ctx.stroke();
+
+    ctx.strokeStyle = P.trackRim;
+    ctx.lineWidth = 0.065;
+    ctx.beginPath();
+    for (let i = 0; i < TRACK_VERTS.length; i++) {
+      const [x, y] = TRACK_VERTS[i];
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  function drawObstacles() {
+    const P = CONFIG.palette;
+    for (const ob of OBSTACLES) {
+      ctx.save();
+      ctx.translate(ob.x, ob.y);
+      ctx.rotate(ob.angle || 0);
+      if (ob.type === 'pipe') {
+        ctx.fillStyle = P.pipeOuter;
+        ctx.beginPath(); ctx.arc(0, 0, ob.r, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = P.pipeMid;
+        ctx.beginPath(); ctx.arc(0, 0, ob.r * 0.72, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = P.pipeCore;
+        ctx.beginPath(); ctx.arc(0, 0, ob.r * 0.42, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = P.pipeRim;
+        ctx.lineWidth = 0.055;
+        ctx.beginPath(); ctx.arc(0, 0, ob.r - 0.02, 0.35, Math.PI - 0.35); ctx.stroke();
+      } else {
+        ctx.fillStyle = P.pipeOuter;
+        ctx.fillRect(-ob.w / 2, -ob.h / 2, ob.w, ob.h);
+        ctx.fillStyle = P.pipeRim;
+        ctx.fillRect(-ob.w / 2, ob.h / 2 - 0.06, ob.w, 0.06);
+      }
+      ctx.restore();
+    }
+  }
+
+  function drawCheckpointsAndFinish() {
+    CHECKPOINTS.forEach((cp, idx) => {
+      if (idx === 0) return;
+      const active = idx <= currentCheckpoint;
+      ctx.save();
+      ctx.translate(cp.x, cp.groundY);
+      ctx.fillStyle = active ? '#f2f2f5' : '#42424a';
+      ctx.fillRect(-0.04, 0, 0.08, 2.8);
+      ctx.beginPath();
+      ctx.moveTo(0.04, 2.8);
+      ctx.lineTo(1.1, 2.45);
+      ctx.lineTo(0.04, 2.1);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    });
+
+    ctx.save();
+    ctx.translate(FINISH_X, FINISH_Y);
+    ctx.fillStyle = '#f2f2f5';
+    ctx.fillRect(-0.08, 0, 0.16, 4.4);
+    ctx.fillRect(-0.35, 3.6, 0.7, 0.8);
+    ctx.scale(1, -1);
+    ctx.font = '900 0.55px Impact, sans-serif';
+    ctx.fillStyle = '#070708';
+    ctx.fillText('FIN', -0.28, -3.78);
+    ctx.restore();
+  }
+
+  function drawParticles() {
+    for (const p of particles) {
+      const a = Math.max(0, p.life / p.maxLife);
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      if (p.hue !== undefined) {
+        ctx.fillStyle = `hsla(${p.hue}, 100%, 65%, ${a * 0.9})`;
+      } else {
+        ctx.fillStyle = `rgba(${p.shade},${p.shade},${p.shade},${a * 0.75})`;
+      }
+      ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.65);
+      ctx.restore();
+    }
+  }
+
+  function drawWheel(body) {
+    const P = CONFIG.palette;
+    const r = CONFIG.bike.wheelRadius;
+    const p = body.getPosition();
+    const ang = body.getAngle();
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(ang);
+
+    ctx.fillStyle = P.tire;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+
+    ctx.fillStyle = P.tread;
+    for (let i = 0; i < 12; i++) {
+      ctx.save();
+      ctx.rotate((i / 12) * Math.PI * 2);
+      ctx.fillRect(r - 0.04, -0.04, 0.05, 0.08);
+      ctx.restore();
+    }
+
+    ctx.strokeStyle = P.rim;
+    ctx.lineWidth = 0.045;
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.65, 0, Math.PI * 2); ctx.stroke();
+
+    ctx.strokeStyle = P.spokes;
+    ctx.lineWidth = 0.025;
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI;
+      ctx.moveTo(Math.cos(a) * -(r * 0.63), Math.sin(a) * -(r * 0.63));
+      ctx.lineTo(Math.cos(a) * (r * 0.63), Math.sin(a) * (r * 0.63));
+    }
+    ctx.stroke();
+
+    ctx.fillStyle = P.rotor;
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.25, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawBikeAndRider() {
+    const P = CONFIG.palette;
+    drawWheel(rearWheel);
+    drawWheel(frontWheel);
+
+    const rw = rearWheel.getPosition();
+    const fw = frontWheel.getPosition();
+    const pivotRear = chassis.getWorldPoint(pl.Vec2(-0.32, -0.02));
+    const forkCrown = chassis.getWorldPoint(pl.Vec2(0.56, 0.34));
+
+    ctx.strokeStyle = P.swingarm;
+    ctx.lineWidth = 0.085;
+    ctx.lineCap = 'butt';
+    ctx.beginPath();
+    ctx.moveTo(pivotRear.x, pivotRear.y);
+    ctx.lineTo(rw.x, rw.y);
+    ctx.stroke();
+
+    ctx.strokeStyle = P.forkStanchion;
+    ctx.lineWidth = 0.075;
+    ctx.beginPath();
+    ctx.moveTo(forkCrown.x, forkCrown.y);
+    ctx.lineTo(fw.x, fw.y);
+    ctx.stroke();
+
+    ctx.strokeStyle = P.forkSlider;
+    ctx.lineWidth = 0.105;
+    ctx.beginPath();
+    ctx.moveTo(forkCrown.x, forkCrown.y);
+    ctx.lineTo(
+      forkCrown.x + (fw.x - forkCrown.x) * 0.55,
+      forkCrown.y + (fw.y - forkCrown.y) * 0.55
+    );
+    ctx.stroke();
+
+    const cp = chassis.getPosition();
+    ctx.save();
+    ctx.translate(cp.x, cp.y);
+    ctx.rotate(chassis.getAngle());
+
+    ctx.fillStyle = P.engine;
+    ctx.beginPath();
+    ctx.moveTo(-0.38, -0.06); ctx.lineTo(0.32, -0.05);
+    ctx.lineTo(0.28, 0.22); ctx.lineTo(-0.30, 0.20);
+    ctx.closePath(); ctx.fill();
+
+    ctx.strokeStyle = P.exhaust;
+    ctx.lineWidth = 0.06;
+    ctx.beginPath();
+    ctx.moveTo(0.18, 0.05); ctx.lineTo(-0.22, 0.02); ctx.lineTo(-0.82, 0.24);
+    ctx.stroke();
+
+    ctx.fillStyle = P.fairing;
+    ctx.beginPath();
+    ctx.moveTo(-0.88, 0.28);
+    ctx.lineTo(-0.25, 0.26);
+    ctx.lineTo(0.18, 0.36);
+    ctx.lineTo(0.58, 0.44);
+    ctx.lineTo(0.95, 0.22);
+    ctx.lineTo(0.56, 0.30);
+    ctx.lineTo(0.15, 0.22);
+    ctx.lineTo(-0.40, 0.14);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = P.seat;
+    ctx.beginPath();
+    ctx.moveTo(-0.55, 0.27); ctx.lineTo(0.08, 0.34);
+    ctx.lineTo(0.12, 0.27); ctx.lineTo(-0.52, 0.22);
+    ctx.closePath(); ctx.fill();
+
+    ctx.strokeStyle = P.bars;
+    ctx.lineWidth = 0.055;
+    ctx.beginPath();
+    ctx.moveTo(0.52, 0.38); ctx.lineTo(0.46, 0.56); ctx.lineTo(0.38, 0.58);
+    ctx.stroke();
+    ctx.restore();
+
+    const footPeg = chassis.getWorldPoint(pl.Vec2(-0.18, -0.02));
+    const grip = chassis.getWorldPoint(pl.Vec2(0.40, 0.57));
+    const hip = riderBody.getWorldPoint(pl.Vec2(-0.04, -0.34));
+    const shoulder = riderBody.getWorldPoint(pl.Vec2(0.06, 0.24));
+    const head = riderBody.getWorldPoint(pl.Vec2(0.07, 0.48));
+
+    const knee = solveIK(hip.x, hip.y, footPeg.x, footPeg.y, 0.38, 0.38, -1);
+    const elbow = solveIK(shoulder.x, shoulder.y, grip.x, grip.y, 0.32, 0.32, 1);
+
+    ctx.strokeStyle = P.riderLegs;
+    ctx.lineWidth = 0.14;
+    ctx.lineJoin = 'miter';
+    ctx.beginPath();
+    ctx.moveTo(hip.x, hip.y); ctx.lineTo(knee.x, knee.y); ctx.lineTo(footPeg.x, footPeg.y);
+    ctx.stroke();
+
+    ctx.save();
+    ctx.translate(riderBody.getPosition().x, riderBody.getPosition().y);
+    ctx.rotate(riderBody.getAngle());
+    ctx.fillStyle = P.riderTorso;
+    ctx.beginPath();
+    ctx.moveTo(-0.14, -0.36); ctx.lineTo(0.12, -0.36);
+    ctx.lineTo(0.18, 0.28); ctx.lineTo(-0.14, 0.28);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = P.riderStripe;
+    ctx.fillRect(-0.12, -0.05, 0.28, 0.12);
+    ctx.restore();
+
+    ctx.strokeStyle = P.riderArms;
+    ctx.lineWidth = 0.10;
+    ctx.beginPath();
+    ctx.moveTo(shoulder.x, shoulder.y); ctx.lineTo(elbow.x, elbow.y); ctx.lineTo(grip.x, grip.y);
+    ctx.stroke();
+
+    ctx.save();
+    ctx.translate(head.x, head.y);
+    ctx.rotate(riderBody.getAngle());
+    ctx.fillStyle = P.helmet;
+    ctx.beginPath(); ctx.arc(0, 0, 0.21, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = P.visor;
+    ctx.beginPath();
+    ctx.moveTo(0.02, 0.14); ctx.lineTo(0.30, 0.11); ctx.lineTo(0.18, 0.20);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = P.goggles;
+    ctx.fillRect(0.08, -0.02, 0.14, 0.08);
+    ctx.restore();
+  }
+
+  function formatTime(sec) {
+    const mins = Math.floor(sec / 60);
+    const rem = sec % 60;
+    return `${String(mins).padStart(2, '0')}:${rem.toFixed(2).padStart(5, '0')}`;
+  }
+
+  // --- Main Loop ---
+  buildWorld(CHECKPOINTS[0]);
+  connectMultiplayer();
+
+  function loop(now) {
+    const frameDt = Math.min((now - lastTime) / 1000, CONFIG.physics.maxFrameDt);
+    lastTime = now;
+    accumulator += frameDt;
+    while (accumulator >= CONFIG.physics.fixedDt) {
+      stepPhysics(CONFIG.physics.fixedDt);
+      accumulator -= CONFIG.physics.fixedDt;
+    }
+    sendLocalPose(now);
+    render(now);
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
