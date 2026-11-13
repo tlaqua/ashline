@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ASHLINE // Monochrome Trials</title>
-  <script src="./planck.min.js"></script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23070708'/><path d='M6 24L16 6l10 18h-5l-5-9-5 9z' fill='%23f2f2f5'/></svg>" />
+  <script src="/planck.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
     html, body {
@@ -28,11 +29,12 @@
     }
     .panel-inner { transform: skewX(10deg); }
     .title-row {
-      display: flex; align-items: center; gap: 14px;
+      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
     }
     .title {
       font-size: 22px; letter-spacing: 3px; font-weight: 900;
       text-transform: uppercase; color: #f2f2f5;
+      min-width: 245px;
     }
     .track-pills {
       display: flex; gap: 5px; pointer-events: auto;
@@ -41,7 +43,7 @@
       background: #141418; color: #8f8f96;
       border: 1px solid #3a3a42;
       font-family: monospace; font-size: 11px; font-weight: 700;
-      padding: 2px 8px; cursor: pointer;
+      padding: 2px 7px; cursor: pointer;
       transition: background 0.1s, color 0.1s;
     }
     .track-btn:hover { color: #f2f2f5; border-color: #7c7c85; }
@@ -106,6 +108,9 @@
             <button class="track-btn active" data-track="0">01</button>
             <button class="track-btn" data-track="1">02</button>
             <button class="track-btn" data-track="2">03</button>
+            <button class="track-btn" data-track="3">04</button>
+            <button class="track-btn" data-track="4">05</button>
+            <button class="track-btn" data-track="5">06</button>
           </div>
         </div>
         <div class="sub" id="ui-net">CONNECTING TO LAB ROOM...</div>
@@ -130,13 +135,21 @@
   </div>
 
   <div id="controls-hint">
-    <b>W / ↑</b> GAS &nbsp;·&nbsp; <b>S / ↓</b> BRAKE / REV &nbsp;·&nbsp; <b>A / ←</b> LEAN BACK &nbsp;·&nbsp; <b>D / →</b> LEAN FWD &nbsp;·&nbsp; <b>SPACE / BKSP</b> CHECKPOINT &nbsp;·&nbsp; <b>R</b> RESTART &nbsp;·&nbsp; <b>1-3</b> TRACK
+    <b>W / ↑</b> GAS &nbsp;·&nbsp; <b>S / ↓</b> BRAKE / REV &nbsp;·&nbsp; <b>A / ←</b> LEAN BACK &nbsp;·&nbsp; <b>D / →</b> LEAN FWD &nbsp;·&nbsp; <b>SPACE / BKSP</b> CHECKPOINT &nbsp;·&nbsp; <b>R</b> RESTART &nbsp;·&nbsp; <b>1-6</b> TRACK
   </div>
 
   <canvas id="game"></canvas>
 
 <script>
 (() => {
+  // Friendly check if /planck.min.js hasn't been added to public/ yet
+  if (typeof planck === 'undefined') {
+    document.getElementById('banner-title').textContent = 'MISSING PLANCK.MIN.JS';
+    document.getElementById('banner-sub').textContent = 'PLACE PLANCK.MIN.JS IN PUBLIC/PLANCK.MIN.JS IN YOUR REPO';
+    document.getElementById('banner').classList.add('visible');
+    return;
+  }
+
   // ============================================================================
   // MASTER TUNING & CONFIGURATION (Adjust everything here during testing)
   // ============================================================================
@@ -175,7 +188,13 @@
       terrainFriction:    1.35,
       terrainRestitution: 0.0,
       obstacleFriction:   1.4,
-      obstacleRestitution:0.02
+      obstacleRestitution:0.02,
+      crateDensity:       0.85,
+      crateFriction:      0.75,
+      seesawDensity:      1.8,
+      seesawReturnSpring: 18,
+      spinnerTorque:      4000,
+      killFloorY:         -26
     },
 
     bike: {
@@ -325,32 +344,57 @@
     }
   };
 
+  // Helper to generate neat crate stacks
+  function crateStack(startX, floorY, cols, rows, size = 0.68) {
+    const out = [];
+    for (let r = 0; r < rows; r++) {
+      const rowCols = Math.max(1, cols - Math.floor(r / 2));
+      const xOffset = (cols - rowCols) * size * 0.5;
+      for (let c = 0; c < rowCols; c++) {
+        out.push({
+          type: 'crate',
+          x: startX + xOffset + c * (size + 0.04),
+          y: floorY + size * 0.5 + r * (size + 0.02),
+          w: size,
+          h: size
+        });
+      }
+    }
+    return out;
+  }
+
   // ============================================================================
-  // TRACK DEFINITIONS (3 Full Courses)
+  // TRACK DEFINITIONS (6 Full Courses, All Pits Either Kill or Have Escape Routes)
   // ============================================================================
   const TRACKS = [
     {
       name: '01 // CONCRETE YARD',
       verts: [
         [-16, 12], [-12, 0], [14, 0],
-        [22, 2.8], [24.5, 3.8], [24.5, -14],
-        [30.5, -14], [30.5, 2.3], [36, 0.3], [44, 0.0],
+        [22, 2.8], [24.5, 3.8], [24.5, -6.5],
+        [30.5, -6.5], [30.5, 2.3], [36, 0.3], [44, 0.0],
         [58, 0.0],
-        [66, 2.2], [72, 5.6], [72, -16],
-        [81, -16], [81, 4.4], [91, -0.5], [98, -1.6],
+        [66, 2.2], [72, 5.6], [72, -6.5],
+        [81, -6.5], [81, 4.4], [91, -0.5], [98, -1.6],
         [104, -1.6], [104.35, -1.15], [108.5, -1.15], [108.85, -0.65], [113.5, -0.65],
         [122, 4.4], [126, 4.4],
         [136, 0.2], [144, 0.0],
         [149, 1.3], [153, 1.5], [158, 0.0],
         [163, 1.6], [167, 1.8], [172, 0.2], [178, 0.2],
-        [185, 2.8], [189, 4.0], [189, -15],
-        [196.5, -15], [196.5, 2.8], [206, -1.2], [214, -1.5],
+        [185, 2.8], [189, 4.0], [189, -6.5],
+        [196.5, -6.5], [196.5, 2.8], [206, -1.2], [214, -1.5],
         [246, -1.5],
         [246.3, -1.10], [250.5, -1.10], [250.8, -0.68], [255.0, -0.68], [255.3, -0.25], [259.5, -0.25],
         [269, 4.8], [274, 4.8],
         [288, -3.5], [295, -4.5],
-        [304, -1.5], [310, 2.2], [310, -20],
-        [322, -20], [322, 1.0], [334, -3.8], [344, -4.2], [372, -4.2], [374, 10]
+        [304, -1.5], [310, 2.2], [310, -10.5],
+        [322, -10.5], [322, 1.0], [334, -3.8], [344, -4.2], [372, -4.2], [374, 10]
+      ],
+      hazards: [
+        { x0: 24.5,  x1: 30.5,  y: -6.5 },
+        { x0: 72.0,  x1: 81.0,  y: -6.5 },
+        { x0: 189.0, x1: 196.5, y: -6.5 },
+        { x0: 310.0, x1: 322.0, y: -10.5 }
       ],
       obstacles: [
         { type: 'pipe', x: 45.2, y: 0.12, r: 0.52 },
@@ -392,18 +436,25 @@
       name: '02 // SKYLINE TRUSS',
       verts: [
         [-16, 12], [-12, 0], [12, 0],
-        [20, 3.2], [20, -16], [26.5, -16], [26.5, 1.8], [34, -0.5], [40, -0.5],
+        [20, 3.2], [20, -6.5], [26.5, -6.5], [26.5, 1.8], [34, -0.5], [40, -0.5],
         [62, -0.5],
         [74, -4.5], [80, -4.5],
-        [87, -2.0], [92, 1.2], [92, -18],
-        [101, -18], [101, 0.0], [110, -2.5], [116, -2.5],
+        [87, -2.0], [92, 1.2], [92, -7.5],
+        [101, -7.5], [101, 0.0], [110, -2.5], [116, -2.5],
         [120, -2.5], [120.3, -2.08], [124.5, -2.08], [124.8, -1.65], [129.0, -1.65], [129.3, -1.22], [133.5, -1.22], [133.8, -0.80], [138.0, -0.80],
         [148, 4.6], [154, 4.6],
         [164, 0.0], [170, 0.0],
-        [176, 1.8], [176, -15], [182.5, -15], [182.5, 0.6], [190, -2.0], [214, -2.0],
+        [176, 1.8], [176, -6.5], [182.5, -6.5], [182.5, 0.6], [190, -2.0], [214, -2.0],
         [220, 0.2], [225, 0.4], [230, -1.4], [236, 0.6], [241, 0.8], [246, -1.0], [252, -1.0],
-        [260, 1.8], [264, 3.2], [264, -18], [272.5, -18], [272.5, 1.6], [282, -2.2], [314, -2.2],
-        [320, 0.5], [325, 2.5], [325, -20], [334, -20], [334, 1.2], [344, -2.8], [352, -3.0], [380, -3.0], [382, 10]
+        [260, 1.8], [264, 3.2], [264, -7.5], [272.5, -7.5], [272.5, 1.6], [282, -2.2], [314, -2.2],
+        [320, 0.5], [325, 2.5], [325, -8.5], [334, -8.5], [334, 1.2], [344, -2.8], [352, -3.0], [380, -3.0], [382, 10]
+      ],
+      hazards: [
+        { x0: 20.0,  x1: 26.5,  y: -6.5 },
+        { x0: 92.0,  x1: 101.0, y: -7.5 },
+        { x0: 176.0, x1: 182.5, y: -6.5 },
+        { x0: 264.0, x1: 272.5, y: -7.5 },
+        { x0: 325.0, x1: 334.0, y: -8.5 }
       ],
       obstacles: [
         { type: 'box',  x: 44.5,  y:  0.00, w: 4.4, h: 0.55, angle:  0.20 },
@@ -444,18 +495,24 @@
       verts: [
         [-16, 12], [-12, 0], [14, 0],
         [14.3, 0.44], [18.5, 0.44], [18.8, 0.90], [23.5, 0.90],
-        [35, 0.90], [41, 2.8], [41, -16], [48, -16], [48, 1.4], [56, -1.8], [62, -1.8],
+        [35, 0.90], [41, 2.8], [41, -6.5], [48, -6.5], [48, 1.4], [56, -1.8], [62, -1.8],
         [68, 0.4], [73, 0.6], [78, -2.0], [84, 0.5], [89, 0.7], [94, -2.2],
-        [102, 1.4], [106, 3.0], [106, -18], [115, -18], [115, 1.6], [125, -2.6], [132, -2.6],
+        [102, 1.4], [106, 3.0], [106, -7.5], [115, -7.5], [115, 1.6], [125, -2.6], [132, -2.6],
         [164, -2.6],
         [176, 4.4], [182, 4.4],
-        [192, -1.5], [198, -3.5], [204, -1.2], [208, 0.5], [208, -18],
-        [216.5, -18], [216.5, -0.5], [226, -4.5], [236, -4.5],
+        [192, -1.5], [198, -3.5], [204, -1.2], [208, 0.5], [208, -8.5],
+        [216.5, -8.5], [216.5, -0.5], [226, -4.5], [236, -4.5],
         [236.3, -4.05], [240.5, -4.05], [240.8, -3.60], [245.0, -3.60], [245.3, -3.15], [250.0, -3.15],
         [260, 2.4], [266, 2.4],
         [278, -3.0], [304, -3.0],
-        [318, -8.5], [326, -8.5], [336, -3.5], [343, 0.8], [343, -24],
-        [356, -24], [356, -0.8], [368, -5.8], [378, -6.0], [404, -6.0], [406, 10]
+        [318, -8.5], [326, -8.5], [336, -3.5], [343, 0.8], [343, -12.5],
+        [356, -12.5], [356, -0.8], [368, -5.8], [378, -6.0], [404, -6.0], [406, 10]
+      ],
+      hazards: [
+        { x0: 41.0,  x1: 48.0,  y: -6.5 },
+        { x0: 106.0, x1: 115.0, y: -7.5 },
+        { x0: 208.0, x1: 216.5, y: -8.5 },
+        { x0: 343.0, x1: 356.0, y: -12.5 }
       ],
       obstacles: [
         { type: 'pipe', x: 26.8,  y:  1.06, r: 0.52 },
@@ -490,10 +547,189 @@
         { x: 334, y: -6.5, text: 'MEGA GAP',  scale: 1.5, rot: -0.52 },
         { x: 385, y: -7.8, text: 'FIN',       scale: 1.6, rot:  0.0 }
       ]
+    },
+
+    {
+      name: '04 // FOUNDRY WORKS',
+      verts: [
+        [-16, 12], [-12, 0], [30, 0],
+        [36, 2.2], [36, -6.5], [43, -6.5], [43, 1.2], [50, -0.5], [56, -0.5],
+        // Climb-out trench 1 (78->90 climbs 24.2 deg back to y=0.2)
+        [60, -5.2], [78, -5.2], [90, 0.2], [104, 0.2],
+        [104, -6.5], [114, -6.5], [114, 1.5], [126, 1.5],
+        [136, -1.5], [144, 2.2], [144, -7.0], [153, -7.0], [153, 1.0], [162, -1.8], [198, -1.8],
+        // Climb-out trench 2 (224->236 climbs 23.8 deg back to y=-0.5)
+        [204, -5.8], [224, -5.8], [236, -0.5], [244, -0.5],
+        [254, 4.2], [260, 4.2], [278, -4.0], [288, -4.0],
+        [288, -10.5], [302, -10.5], [302, -2.5], [316, -6.0], [352, -6.0], [354, 10]
+      ],
+      hazards: [
+        { x0: 36.0,  x1: 43.0,  y: -6.5 },
+        { x0: 104.0, x1: 114.0, y: -6.5 },
+        { x0: 144.0, x1: 153.0, y: -7.0 },
+        { x0: 288.0, x1: 302.0, y: -10.5 }
+      ],
+      obstacles: [
+        { type: 'boost',  x: 12.0,  y:  0.05, w: 6.0,  h: 0.14, angle:  0.00,  thrust: 32 },
+        ...crateStack(21.5, 0.0, 3, 3),
+        { type: 'seesaw', x: 63.2,  y: -0.40, w: 8.6,  h: 0.40, maxAngle: 0.34 },
+        { type: 'seesaw', x: 72.8,  y: -0.15, w: 8.4,  h: 0.40, maxAngle: 0.34 },
+        { type: 'box',    x: 80.2,  y:  0.00, w: 5.6,  h: 0.45, angle:  0.00 },
+        { type: 'bounce', x: 101.5, y:  0.26, w: 2.8,  h: 0.16, angle:  0.00,  ix: 7.5, iy: 15.0 },
+        ...crateStack(119.5, 1.5, 3, 2),
+        { type: 'boost',  x: 131.0, y:  0.00, w: 7.0,  h: 0.14, angle: -0.291, thrust: 30 },
+        { type: 'pipe',   x: 172.5, y: -1.66, r: 0.52 },
+        { type: 'pipe',   x: 176.2, y: -1.60, r: 0.56 },
+        { type: 'boost',  x: 192.0, y: -1.73, w: 6.5,  h: 0.14, angle:  0.00,  thrust: 32 },
+        { type: 'seesaw', x: 205.5, y: -0.80, w: 9.0,  h: 0.40, maxAngle: 0.34 },
+        { type: 'box',    x: 215.5, y: -0.50, w: 7.0,  h: 0.45, angle:  0.00 },
+        { type: 'boost',  x: 269.0, y:  0.10, w: 12.0, h: 0.14, angle: -0.428, thrust: 28 },
+        { type: 'bounce', x: 285.5, y: -3.93, w: 3.0,  h: 0.16, angle:  0.00,  ix: 10.5, iy: 16.5 }
+      ],
+      checkpoints: [
+        { x: 3,   groundY:  0.0 },
+        { x: 52,  groundY: -0.5 },
+        { x: 94,  groundY:  0.2 },
+        { x: 165, groundY: -1.8 },
+        { x: 240, groundY: -0.5 },
+        { x: 282, groundY: -4.0 }
+      ],
+      finishX: 332,
+      finishY: -6.0,
+      tags: [
+        { x: 14,  y: -1.8, text: 'FOUNDRY',  scale: 1.4, rot:  0.0 },
+        { x: 68,  y: -7.0, text: 'SEESAW//', scale: 1.3, rot:  0.0 },
+        { x: 100, y: -1.8, text: 'LAUNCH',   scale: 1.2, rot:  0.0 },
+        { x: 185, y: -3.8, text: 'CRUSH',    scale: 1.4, rot:  0.0 },
+        { x: 268, y: -2.2, text: 'TURBO',    scale: 1.4, rot: -0.42 },
+        { x: 329, y: -7.8, text: 'FIN',      scale: 1.6, rot:  0.0 }
+      ]
+    },
+
+    {
+      name: '05 // VERTICAL SHIFT',
+      verts: [
+        [-16, 12], [-12, 0], [16, 0],
+        [16, -6.0], [20, -6.0], [20, 3.8], [32, 3.8],
+        // Escape ramp 1 (47->60 climbs 28.3 deg up to 4.5)
+        [34, -2.5], [47, -2.5], [60, 4.5], [68, 4.5],
+        // Escape valley 2 (118->128 climbs 25.2 deg up to -0.5)
+        [80, -1.5], [98, -1.5], [104, -5.2], [118, -5.2], [128, -0.5], [134, -0.5],
+        [140, 1.5], [140, -7.0], [149, -7.0], [149, 0.5], [156, -2.0], [166, -2.0],
+        // Escape valley 3 (190->202 climbs 23.4 deg up to -1.0)
+        [170, -6.2], [190, -6.2], [202, -1.0], [218, -1.0],
+        // Escape ramp 4 (232->246 climbs 26.5 deg up to 2.5)
+        [220, -4.5], [232, -4.5], [246, 2.5], [260, 2.5],
+        [282, -5.5], [292, -5.5], [300, -1.5], [306, 2.0], [306, -11.5],
+        [319, -11.5], [319, 0.5], [332, -4.5], [368, -4.5], [370, 10]
+      ],
+      hazards: [
+        { x0: 16.0,  x1: 20.0,  y: -6.0 },
+        { x0: 140.0, x1: 149.0, y: -7.0 },
+        { x0: 306.0, x1: 319.0, y: -11.5 }
+      ],
+      obstacles: [
+        { type: 'bounce',  x: 13.5,  y:  0.08, w: 3.0,  h: 0.16, angle:  0.00,  ix: 5.5, iy: 16.5 },
+        { type: 'mover',   x: 37.5,  y:  1.10, w: 6.2,  h: 0.44, ampX: 0.0, ampY: 3.0, speed: 1.15, phase: 0.0 },
+        { type: 'mover',   x: 51.5,  y:  4.10, w: 6.8,  h: 0.44, ampX: 4.2, ampY: 0.0, speed: 1.25, phase: 1.2 },
+        { type: 'pipe',    x: 86.0,  y: -1.36, r: 0.50 },
+        { type: 'pipe',    x: 91.5,  y: -1.32, r: 0.54 },
+        { type: 'spinner', x: 110.5, y: -1.40, r: 2.60, blades: 4, speed: -0.95 },
+        { type: 'boost',   x: 137.0, y:  0.50, w: 6.5,  h: 0.14, angle:  0.322, thrust: 32 },
+        { type: 'mover',   x: 175.0, y: -1.80, w: 6.8,  h: 0.44, ampX: 4.5, ampY: 0.0, speed: 1.35, phase: 0.0 },
+        { type: 'mover',   x: 188.0, y: -1.30, w: 6.8,  h: 0.44, ampX:-4.5, ampY: 0.0, speed: 1.35, phase: 0.5 },
+        ...crateStack(207.5, -1.0, 3, 3),
+        { type: 'mover',   x: 225.0, y: -0.60, w: 6.5,  h: 0.44, ampX: 0.0, ampY: 3.1, speed: 1.20, phase: 0.8 },
+        { type: 'seesaw',  x: 236.5, y:  2.40, w: 8.4,  h: 0.40, maxAngle: 0.34 },
+        { type: 'boost',   x: 271.0, y: -1.50, w: 14.0, h: 0.14, angle: -0.349, thrust: 28 }
+      ],
+      checkpoints: [
+        { x: 3,   groundY:  0.0 },
+        { x: 29,  groundY:  3.8 },
+        { x: 65,  groundY:  4.5 },
+        { x: 131, groundY: -0.5 },
+        { x: 161, groundY: -2.0 },
+        { x: 215, groundY: -1.0 },
+        { x: 257, groundY:  2.5 }
+      ],
+      finishX: 350,
+      finishY: -4.5,
+      tags: [
+        { x: 11,  y: -1.8, text: 'SPRING',   scale: 1.2, rot:  0.0 },
+        { x: 40,  y: -4.2, text: 'LIFT//',   scale: 1.3, rot:  0.0 },
+        { x: 110, y: -6.8, text: 'TURBINE',  scale: 1.3, rot:  0.0 },
+        { x: 180, y: -7.8, text: 'SLIDERS',  scale: 1.4, rot:  0.0 },
+        { x: 270, y: -3.5, text: 'DROP IN',  scale: 1.4, rot: -0.35 },
+        { x: 347, y: -6.3, text: 'FIN',      scale: 1.6, rot:  0.0 }
+      ]
+    },
+
+    {
+      name: '06 // NEON GAUNTLET',
+      verts: [
+        [-16, 12], [-12, 0], [12, 0],
+        [18, 2.5], [18, -6.5], [26, -6.5], [26, 1.2], [36, -2.0], [42, -2.0],
+        [42, -7.0], [50, -7.0], [50, 1.0], [58, -1.0], [64, -1.0],
+        // Escape valley 1 (86->98 climbs 23.8 deg)
+        [68, -5.8], [86, -5.8], [98, -0.5], [104, -0.5],
+        // Escape valley 2 (142->154 climbs 26.5 deg)
+        [108, -5.5], [142, -5.5], [154, 0.5], [184, 0.5],
+        [184.3, 0.95], [188.5, 0.95], [188.8, 1.40], [193.0, 1.40], [193.3, 1.85], [197.5, 1.85], [197.8, 2.30], [202.0, 2.30],
+        // Escape ramp 3 (236->246 climbs 22.8 deg)
+        [212, 6.8], [218, 6.8], [226, 0.0], [236, 0.0], [246, 4.2], [254, 4.2],
+        [268, -2.5], [284, -2.5], [290, 0.5], [295, 3.0], [295, -10.0],
+        [307, -10.0], [307, 1.5], [318, -3.5], [330, -3.5],
+        [348, -9.0], [356, -9.0], [368, -3.5], [374, 0.2], [374, -14.0],
+        [389, -14.0], [389, -1.5], [404, -6.5], [436, -6.5], [438, 10]
+      ],
+      hazards: [
+        { x0: 18.0,  x1: 26.0,  y: -6.5 },
+        { x0: 42.0,  x1: 50.0,  y: -7.0 },
+        { x0: 295.0, x1: 307.0, y: -10.0 },
+        { x0: 374.0, x1: 389.0, y: -14.0 }
+      ],
+      obstacles: [
+        { type: 'boost',   x: 9.0,   y:  0.05, w: 6.0,  h: 0.14, angle:  0.00,  thrust: 34 },
+        { type: 'bounce',  x: 39.5,  y: -1.93, w: 2.8,  h: 0.16, angle:  0.00,  ix: 7.5, iy: 15.5 },
+        { type: 'seesaw',  x: 71.5,  y: -0.90, w: 8.8,  h: 0.40, maxAngle: 0.34 },
+        { type: 'box',     x: 82.0,  y: -0.70, w: 7.4,  h: 0.45, angle:  0.00 },
+        ...crateStack(82.0, -0.45, 3, 2),
+        { type: 'mover',   x: 112.0, y: -0.40, w: 6.2,  h: 0.44, ampX:  3.2, ampY: 0, speed: 1.30, phase: 0.0 },
+        { type: 'spinner', x: 124.5, y: -0.80, r: 2.40, blades: 4, speed: -1.05 },
+        { type: 'mover',   x: 138.0, y:  0.10, w: 6.4,  h: 0.44, ampX: -3.4, ampY: 0, speed: 1.30, phase: 1.5 },
+        { type: 'pipe',    x: 166.5, y:  0.64, r: 0.52 },
+        { type: 'pipe',    x: 170.5, y:  0.70, r: 0.56 },
+        { type: 'pipe',    x: 174.5, y:  0.64, r: 0.50 },
+        { type: 'pipe',    x: 178.5, y:  0.72, r: 0.58 },
+        { type: 'bounce',  x: 233.5, y:  0.08, w: 3.0,  h: 0.16, angle:  0.00,  ix: 7.0, iy: 16.5 },
+        { type: 'boost',   x: 276.0, y: -2.43, w: 10.0, h: 0.14, angle:  0.00,  thrust: 34 },
+        ...crateStack(326.0, -3.5, 3, 3),
+        { type: 'boost',   x: 339.0, y: -6.25, w: 13.0, h: 0.14, angle: -0.297, thrust: 34 }
+      ],
+      checkpoints: [
+        { x: 3,   groundY:  0.0 },
+        { x: 61,  groundY: -1.0 },
+        { x: 101, groundY: -0.5 },
+        { x: 157, groundY:  0.5 },
+        { x: 215, groundY:  6.8 },
+        { x: 250, groundY:  4.2 },
+        { x: 322, groundY: -3.5 }
+      ],
+      finishX: 420,
+      finishY: -6.5,
+      tags: [
+        { x: 10,  y: -1.8, text: 'GAUNTLET', scale: 1.3, rot:  0.0 },
+        { x: 75,  y: -7.5, text: 'SMASH//',  scale: 1.3, rot:  0.0 },
+        { x: 124, y: -7.2, text: 'GEARS',    scale: 1.4, rot:  0.0 },
+        { x: 205, y:  2.2, text: 'STEP UP',  scale: 1.2, rot: -0.42 },
+        { x: 280, y: -4.4, text: 'OVERDRIVE',scale: 1.3, rot:  0.0 },
+        { x: 360, y: -9.5, text: 'SEND IT',  scale: 1.6, rot: -0.40 },
+        { x: 417, y: -8.3, text: 'FIN',      scale: 1.6, rot:  0.0 }
+      ]
     }
   ];
 
-  const SKYLINE = Array.from({ length: 64 }, (_, i) => ({
+  const SKYLINE = Array.from({ length: 76 }, (_, i) => ({
     x: i * 18 - 40,
     w: 8 + ((i * 37) % 14),
     h: 14 + ((i * 53) % 28),
@@ -545,9 +781,22 @@
   let rearRestLocal, frontRestLocal, rearAxisUnit, frontAxisUnit;
   let rearContacts = 0, frontContacts = 0;
   let crashed = false, pendingCrash = false, finished = false;
-  let currentCheckpoint = 0, faults = 0, runTime = 0, timerStarted = false;
+  let pendingBounce = null;
+  let currentCheckpoint = 0, faults = 0, runTime = 0, simTime = 0, timerStarted = false;
   let unpinchTimer = 0;
   let particles = [];
+
+  // Dynamic/kinematic/special obstacle runtime lists
+  let crates = [];
+  let seesaws = [];
+  let movers = [];
+  let spinners = [];
+  let bouncePads = [];
+  let boostPads = [];
+  let bounceByFixture = new Map();
+  let boostByFixture = new Map();
+  let activeBoostCounts = new Map();
+
   let camX = CONFIG.camera.initialX;
   let camY = CONFIG.camera.initialY;
   let camZoom = CONFIG.camera.initialZoom;
@@ -575,9 +824,10 @@
     if (CONFIG.controls.restart.includes(e.code))    { e.preventDefault(); resetFullRun(); }
     if (CONFIG.controls.checkpoint.includes(e.code)) { e.preventDefault(); respawnCheckpoint(); }
     if (e.code === 'Enter' && finished)              { e.preventDefault(); advanceAfterFinish(); }
-    if (e.code === 'Digit1') { e.preventDefault(); selectTrack(0); }
-    if (e.code === 'Digit2') { e.preventDefault(); selectTrack(1); }
-    if (e.code === 'Digit3') { e.preventDefault(); selectTrack(2); }
+    if (e.code >= 'Digit1' && e.code <= 'Digit6') {
+      e.preventDefault();
+      selectTrack(Number(e.code.slice(5)) - 1);
+    }
   });
   window.addEventListener('keyup', (e) => {
     if (keyLookup[e.code]) keys[keyLookup[e.code]] = false;
@@ -600,8 +850,7 @@
   }
 
   function advanceAfterFinish() {
-    const nextIdx = (currentTrackIdx + 1) % TRACKS.length;
-    selectTrack(nextIdx);
+    selectTrack((currentTrackIdx + 1) % TRACKS.length);
   }
 
   // ============================================================================
@@ -749,9 +998,21 @@
     world = new pl.World({ gravity: pl.Vec2(0, CONFIG.physics.gravityY) });
     rearContacts = 0; frontContacts = 0;
     crashed = false; pendingCrash = false; finished = false;
+    pendingBounce = null;
     unpinchTimer = 0;
     banner.classList.remove('visible');
 
+    crates = [];
+    seesaws = [];
+    movers = [];
+    spinners = [];
+    bouncePads = [];
+    boostPads = [];
+    bounceByFixture.clear();
+    boostByFixture.clear();
+    activeBoostCounts.clear();
+
+    // Terrain
     const terrainBody = world.createBody();
     const chain = new pl.Chain(activeTrack.verts.map(([x, y]) => pl.Vec2(x, y)), false);
     const tf = terrainBody.createFixture(chain, {
@@ -760,14 +1021,91 @@
     });
     tf.setUserData('terrain');
 
+    // Lethal Pit Hazards
+    for (const hz of (activeTrack.hazards || [])) {
+      const hb = world.createBody({ position: pl.Vec2((hz.x0 + hz.x1) * 0.5, hz.y + 0.10) });
+      const hf = hb.createFixture(new pl.Box((hz.x1 - hz.x0) * 0.5, 0.14), { friction: 0.9 });
+      hf.setUserData('hazard');
+    }
+
+    // Track Obstacles
     for (const ob of activeTrack.obstacles) {
-      const b = world.createBody({ position: pl.Vec2(ob.x, ob.y), angle: ob.angle || 0 });
-      const shape = ob.type === 'pipe' ? new pl.Circle(ob.r) : new pl.Box(ob.w / 2, ob.h / 2);
-      const f = b.createFixture(shape, {
-        friction: CONFIG.physics.obstacleFriction,
-        restitution: CONFIG.physics.obstacleRestitution
-      });
-      f.setUserData('terrain');
+      if (ob.type === 'pipe' || ob.type === 'box') {
+        const b = world.createBody({ position: pl.Vec2(ob.x, ob.y), angle: ob.angle || 0 });
+        const shape = ob.type === 'pipe' ? new pl.Circle(ob.r) : new pl.Box(ob.w / 2, ob.h / 2);
+        const f = b.createFixture(shape, {
+          friction: CONFIG.physics.obstacleFriction,
+          restitution: CONFIG.physics.obstacleRestitution
+        });
+        f.setUserData('terrain');
+      } else if (ob.type === 'crate') {
+        const b = world.createDynamicBody({
+          position: pl.Vec2(ob.x, ob.y),
+          angle: ob.angle || 0,
+          linearDamping: 0.15,
+          angularDamping: 0.4
+        });
+        const f = b.createFixture(new pl.Box(ob.w / 2, ob.h / 2), {
+          density: CONFIG.physics.crateDensity,
+          friction: CONFIG.physics.crateFriction,
+          restitution: 0.08
+        });
+        f.setUserData('prop');
+        crates.push({ body: b, w: ob.w, h: ob.h });
+      } else if (ob.type === 'seesaw') {
+        const anchor = world.createBody({ position: pl.Vec2(ob.x, ob.y) });
+        const beam = world.createDynamicBody({
+          position: pl.Vec2(ob.x, ob.y),
+          angularDamping: 2.2
+        });
+        const f = beam.createFixture(new pl.Box(ob.w / 2, ob.h / 2), {
+          density: CONFIG.physics.seesawDensity,
+          friction: 1.55,
+          restitution: 0.0
+        });
+        f.setUserData('terrain');
+        world.createJoint(new pl.RevoluteJoint({
+          enableLimit: true,
+          lowerAngle: -(ob.maxAngle || 0.34),
+          upperAngle:  (ob.maxAngle || 0.34)
+        }, anchor, beam, pl.Vec2(ob.x, ob.y)));
+        seesaws.push({ body: beam, x: ob.x, y: ob.y, w: ob.w, h: ob.h });
+      } else if (ob.type === 'mover') {
+        const b = world.createKinematicBody({ position: pl.Vec2(ob.x, ob.y) });
+        const f = b.createFixture(new pl.Box(ob.w / 2, ob.h / 2), {
+          friction: 1.65,
+          restitution: 0.0
+        });
+        f.setUserData('terrain');
+        movers.push({ body: b, cfg: ob });
+      } else if (ob.type === 'spinner') {
+        const hub = world.createBody({ position: pl.Vec2(ob.x, ob.y) });
+        const wheel = world.createDynamicBody({ position: pl.Vec2(ob.x, ob.y) });
+        const f1 = wheel.createFixture(new pl.Box(ob.r, 0.20), { density: 5.0, friction: 1.5 });
+        const f2 = wheel.createFixture(new pl.Box(0.20, ob.r), { density: 5.0, friction: 1.5 });
+        f1.setUserData('terrain');
+        f2.setUserData('terrain');
+        world.createJoint(new pl.RevoluteJoint({
+          enableMotor: true,
+          motorSpeed: ob.speed,
+          maxMotorTorque: CONFIG.physics.spinnerTorque
+        }, hub, wheel, pl.Vec2(ob.x, ob.y)));
+        spinners.push({ body: wheel, x: ob.x, y: ob.y, r: ob.r });
+      } else if (ob.type === 'bounce') {
+        const b = world.createBody({ position: pl.Vec2(ob.x, ob.y), angle: ob.angle || 0 });
+        const f = b.createFixture(new pl.Box(ob.w / 2, ob.h / 2), { friction: 0.6, restitution: 0.2 });
+        f.setUserData('bounce');
+        const pad = { ...ob, lastHit: -10, flash: 0 };
+        bouncePads.push(pad);
+        bounceByFixture.set(f, pad);
+      } else if (ob.type === 'boost') {
+        const b = world.createBody({ position: pl.Vec2(ob.x, ob.y), angle: ob.angle || 0 });
+        const f = b.createFixture(new pl.Box(ob.w / 2, ob.h / 2), { friction: 1.5, restitution: 0.0 });
+        f.setUserData('boost');
+        boostPads.push(ob);
+        boostByFixture.set(f, ob);
+        activeBoostCounts.set(ob, 0);
+      }
     }
 
     const sx = cp.x, sy = cp.groundY + 1.45;
@@ -858,30 +1196,57 @@
       motorSpeed: 0
     }, chassis, riderBody, pl.Vec2(sx + CONFIG.rider.jointOffset.x, sy + CONFIG.rider.jointOffset.y)));
 
+    const isBikePart = (u) => u === 'rearWheel' || u === 'frontWheel' || u === 'chassis' || u === 'fatal';
+    const isRideSurface = (u) => u === 'terrain' || u === 'prop' || u === 'boost' || u === 'bounce';
+
     world.on('begin-contact', (contact) => {
       const fA = contact.getFixtureA(), fB = contact.getFixtureB();
       const uA = fA.getUserData(), uB = fB.getUserData();
+
       if ((uA === 'fatal' && uB === 'terrain') || (uB === 'fatal' && uA === 'terrain')) {
         if (!crashed && !finished) pendingCrash = true;
       }
-      if ((uA === 'rearWheel' && uB === 'terrain') || (uB === 'rearWheel' && uA === 'terrain')) {
+      if ((uA === 'hazard' && isBikePart(uB)) || (uB === 'hazard' && isBikePart(uA))) {
+        if (!crashed && !finished) pendingCrash = true;
+      }
+
+      if ((uA === 'rearWheel' && isRideSurface(uB)) || (uB === 'rearWheel' && isRideSurface(uA))) {
         rearContacts++;
         spawnDust(rearWheel.getPosition(), CONFIG.visuals.dustLandingRear, 2.5);
       }
-      if ((uA === 'frontWheel' && uB === 'terrain') || (uB === 'frontWheel' && uA === 'terrain')) {
+      if ((uA === 'frontWheel' && isRideSurface(uB)) || (uB === 'frontWheel' && isRideSurface(uA))) {
         frontContacts++;
         spawnDust(frontWheel.getPosition(), CONFIG.visuals.dustLandingFront, 2.0);
+      }
+
+      // Bounce pads
+      const bPad = bounceByFixture.get(fA) || bounceByFixture.get(fB);
+      const otherU = bounceByFixture.has(fA) ? uB : uA;
+      if (bPad && isBikePart(otherU) && simTime - bPad.lastHit > 0.25 && !crashed && !finished) {
+        pendingBounce = bPad;
+      }
+
+      // Boost pads
+      const bst = boostByFixture.get(fA) || boostByFixture.get(fB);
+      const bstOther = boostByFixture.has(fA) ? uB : uA;
+      if (bst && (bstOther === 'rearWheel' || bstOther === 'frontWheel')) {
+        activeBoostCounts.set(bst, (activeBoostCounts.get(bst) || 0) + 1);
       }
     });
 
     world.on('end-contact', (contact) => {
-      const uA = contact.getFixtureA().getUserData();
-      const uB = contact.getFixtureB().getUserData();
-      if ((uA === 'rearWheel' && uB === 'terrain') || (uB === 'rearWheel' && uA === 'terrain')) {
+      const fA = contact.getFixtureA(), fB = contact.getFixtureB();
+      const uA = fA.getUserData(), uB = fB.getUserData();
+      if ((uA === 'rearWheel' && isRideSurface(uB)) || (uB === 'rearWheel' && isRideSurface(uA))) {
         rearContacts = Math.max(0, rearContacts - 1);
       }
-      if ((uA === 'frontWheel' && uB === 'terrain') || (uB === 'frontWheel' && uA === 'terrain')) {
+      if ((uA === 'frontWheel' && isRideSurface(uB)) || (uB === 'frontWheel' && isRideSurface(uA))) {
         frontContacts = Math.max(0, frontContacts - 1);
+      }
+      const bst = boostByFixture.get(fA) || boostByFixture.get(fB);
+      const bstOther = boostByFixture.has(fA) ? uB : uA;
+      if (bst && (bstOther === 'rearWheel' || bstOther === 'frontWheel')) {
+        activeBoostCounts.set(bst, Math.max(0, (activeBoostCounts.get(bst) || 0) - 1));
       }
     });
   }
@@ -996,8 +1361,29 @@
   let leanSmooth = 0;
 
   function stepPhysics(dt) {
+    simTime += dt;
     if (keys.gas || keys.brake || keys.back || keys.fwd) timerStarted = true;
     if (timerStarted && !crashed && !finished) runTime += dt;
+
+    // Animate moving elevators & bridges via exact target velocity
+    for (const m of movers) {
+      const c = m.cfg;
+      const theta = simTime * c.speed + (c.phase || 0);
+      const targetX = c.x + (c.ampX || 0) * Math.sin(theta);
+      const targetY = c.y + (c.ampY || 0) * Math.sin(theta);
+      const p = m.body.getPosition();
+      m.body.setLinearVelocity(pl.Vec2((targetX - p.x) / dt, (targetY - p.y) / dt));
+    }
+
+    // Gentle centering spring on seesaws
+    for (const s of seesaws) {
+      s.body.applyTorque(-s.body.getAngle() * CONFIG.physics.seesawReturnSpring, true);
+    }
+
+    // Fade bounce pad flash
+    for (const bp of bouncePads) {
+      if (bp.flash > 0) bp.flash = Math.max(0, bp.flash - dt * 3);
+    }
 
     if (!crashed && !finished) {
       const cVel = chassis.getLinearVelocity();
@@ -1028,6 +1414,21 @@
         rearJoint.setMotorSpeed(0);
         frontJoint.setMaxMotorTorque(CONFIG.drivetrain.coastFrontDrag);
         frontJoint.setMotorSpeed(0);
+      }
+
+      // Boost strip propulsion
+      for (const [bst, count] of activeBoostCounts) {
+        if (count > 0) {
+          const ang = bst.angle || 0;
+          const fx = Math.cos(ang) * bst.thrust;
+          const fy = Math.sin(ang) * bst.thrust;
+          chassis.applyForce(pl.Vec2(fx, fy), chassis.getWorldCenter(), true);
+          rearJoint.setMaxMotorTorque(CONFIG.drivetrain.gasMaxTorque * 1.3);
+          rearJoint.setMotorSpeed(-60);
+          if (Math.random() < 0.65) {
+            spawnDust({ x: rearWheel.getPosition().x, y: rearWheel.getPosition().y }, 1, 4.0);
+          }
+        }
       }
 
       const rawLean = (keys.back ? 1 : 0) - (keys.fwd ? 1 : 0);
@@ -1083,6 +1484,10 @@
       applySuspensionLimits(rearWheel, rearRestLocal, rearAxisUnit);
       applySuspensionLimits(frontWheel, frontRestLocal, frontAxisUnit);
 
+      if (chassis.getPosition().y < CONFIG.physics.killFloorY) {
+        pendingCrash = true;
+      }
+
       const bx = chassis.getPosition().x;
       for (let i = currentCheckpoint + 1; i < activeTrack.checkpoints.length; i++) {
         if (bx >= activeTrack.checkpoints[i].x) currentCheckpoint = i;
@@ -1099,6 +1504,18 @@
     }
 
     world.step(dt, CONFIG.physics.velocityIterations, CONFIG.physics.positionIterations);
+
+    if (pendingBounce && !crashed && !finished) {
+      const pad = pendingBounce;
+      pendingBounce = null;
+      pad.lastHit = simTime;
+      pad.flash = 1.0;
+      for (const body of [chassis, rearWheel, frontWheel, riderBody]) {
+        const v = body.getLinearVelocity();
+        body.setLinearVelocity(pl.Vec2(v.x * 0.65 + pad.ix, Math.max(0, v.y * 0.15) + pad.iy));
+      }
+      spawnDust({ x: pad.x, y: pad.y + 0.3 }, 14, 5.5);
+    }
 
     if (pendingCrash) {
       pendingCrash = false;
@@ -1172,6 +1589,8 @@
 
     drawObstacles();
     drawTrack();
+    drawHazards();
+    drawDynamicObstacles();
     drawCheckpointsAndFinish();
     drawGhosts(now, renderDt);
     drawParticles();
@@ -1468,9 +1887,33 @@
     ctx.stroke();
   }
 
+  function drawHazards() {
+    for (const hz of (activeTrack.hazards || [])) {
+      const w = hz.x1 - hz.x0;
+      ctx.save();
+      // Hazard floor caution bar
+      ctx.fillStyle = '#202026';
+      ctx.fillRect(hz.x0, hz.y, w, 0.14);
+      // Razor steel spikes
+      const step = 0.65;
+      ctx.fillStyle = '#e5e5ec';
+      ctx.beginPath();
+      for (let x = hz.x0; x < hz.x1 - 0.1; x += step) {
+        const sw = Math.min(step, hz.x1 - x);
+        ctx.moveTo(x, hz.y + 0.10);
+        ctx.lineTo(x + sw * 0.5, hz.y + 0.55);
+        ctx.lineTo(x + sw, hz.y + 0.10);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
   function drawObstacles() {
     const P = CONFIG.palette;
     for (const ob of activeTrack.obstacles) {
+      if (ob.type !== 'pipe' && ob.type !== 'box') continue;
       ctx.save();
       ctx.translate(ob.x, ob.y);
       ctx.rotate(ob.angle || 0);
@@ -1490,6 +1933,142 @@
         ctx.fillStyle = P.pipeRim;
         ctx.fillRect(-ob.w / 2, ob.h / 2 - 0.06, ob.w, 0.06);
       }
+      ctx.restore();
+    }
+  }
+
+  function drawDynamicObstacles() {
+    // 1. Boost Strips (Animated Monochrome Chevrons)
+    for (const b of boostPads) {
+      ctx.save();
+      ctx.translate(b.x, b.y);
+      ctx.rotate(b.angle || 0);
+      ctx.fillStyle = '#18181d';
+      ctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h);
+      ctx.fillStyle = '#f2f2f5';
+      ctx.fillRect(-b.w / 2, b.h / 2 - 0.04, b.w, 0.04);
+
+      const scroll = (simTime * 5) % 1.2;
+      ctx.strokeStyle = '#f2f2f5';
+      ctx.lineWidth = 0.07;
+      ctx.beginPath();
+      for (let x = -b.w / 2 + 0.4 + scroll; x < b.w / 2 - 0.4; x += 1.2) {
+        ctx.moveTo(x - 0.25, 0.14);
+        ctx.lineTo(x + 0.10, 0.32);
+        ctx.lineTo(x - 0.25, 0.50);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 2. Bounce Pads
+    for (const bp of bouncePads) {
+      ctx.save();
+      ctx.translate(bp.x, bp.y);
+      ctx.rotate(bp.angle || 0);
+      const lift = bp.flash * 0.22;
+      ctx.fillStyle = '#24242a';
+      ctx.fillRect(-bp.w / 2, -bp.h / 2, bp.w, bp.h);
+      // Coiled spring struts
+      ctx.strokeStyle = '#8b8b94';
+      ctx.lineWidth = 0.06;
+      ctx.beginPath();
+      ctx.moveTo(-bp.w * 0.32, 0); ctx.lineTo(-bp.w * 0.32, 0.12 + lift);
+      ctx.moveTo( bp.w * 0.32, 0); ctx.lineTo( bp.w * 0.32, 0.12 + lift);
+      ctx.stroke();
+      // Top launcher plate
+      ctx.fillStyle = bp.flash > 0.1 ? '#ffffff' : '#d8d8e0';
+      ctx.fillRect(-bp.w / 2, bp.h / 2 + lift - 0.02, bp.w, 0.10);
+      ctx.restore();
+    }
+
+    // 3. Moving Elevators / Sliding Bridges + Track Rails
+    for (const m of movers) {
+      const c = m.cfg;
+      // Subtle guide rail behind mover
+      ctx.strokeStyle = 'rgba(235, 235, 240, 0.14)';
+      ctx.lineWidth = 0.05;
+      ctx.setLineDash([0.25, 0.25]);
+      ctx.beginPath();
+      ctx.moveTo(c.x - (c.ampX || 0), c.y - (c.ampY || 0));
+      ctx.lineTo(c.x + (c.ampX || 0), c.y + (c.ampY || 0));
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      const p = m.body.getPosition();
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.fillStyle = '#18181d';
+      ctx.fillRect(-c.w / 2, -c.h / 2, c.w, c.h);
+      // Truss diagonals
+      ctx.strokeStyle = '#484852';
+      ctx.lineWidth = 0.05;
+      ctx.beginPath();
+      for (let x = -c.w / 2 + 0.2; x < c.w / 2 - 0.5; x += 0.9) {
+        ctx.moveTo(x, -c.h / 2 + 0.05);
+        ctx.lineTo(x + 0.5, c.h / 2 - 0.08);
+      }
+      ctx.stroke();
+      ctx.fillStyle = '#ededf2';
+      ctx.fillRect(-c.w / 2, c.h / 2 - 0.07, c.w, 0.07);
+      ctx.restore();
+    }
+
+    // 4. Seesaws
+    for (const s of seesaws) {
+      const p = s.body.getPosition();
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(s.body.getAngle());
+      ctx.fillStyle = '#1d1d22';
+      ctx.fillRect(-s.w / 2, -s.h / 2, s.w, s.h);
+      ctx.fillStyle = '#ededf2';
+      ctx.fillRect(-s.w / 2, s.h / 2 - 0.07, s.w, 0.07);
+      ctx.restore();
+      // Pivot hub
+      ctx.fillStyle = '#09090b';
+      ctx.beginPath(); ctx.arc(s.x, s.y, 0.26, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#f2f2f5';
+      ctx.lineWidth = 0.06;
+      ctx.beginPath(); ctx.arc(s.x, s.y, 0.26, 0, Math.PI * 2); ctx.stroke();
+    }
+
+    // 5. Spinning Steel Turbines
+    for (const sp of spinners) {
+      const p = sp.body.getPosition();
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(sp.body.getAngle());
+      ctx.fillStyle = '#24242a';
+      ctx.fillRect(-sp.r, -0.20, sp.r * 2, 0.40);
+      ctx.fillRect(-0.20, -sp.r, 0.40, sp.r * 2);
+      ctx.strokeStyle = '#e5e5ec';
+      ctx.lineWidth = 0.05;
+      ctx.strokeRect(-sp.r, -0.20, sp.r * 2, 0.40);
+      ctx.strokeRect(-0.20, -sp.r, 0.40, sp.r * 2);
+      ctx.fillStyle = '#09090b';
+      ctx.beginPath(); ctx.arc(0, 0, 0.34, 0, Math.PI * 2); ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 6. Smashable Crates
+    for (const cr of crates) {
+      const p = cr.body.getPosition();
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(cr.body.getAngle());
+      ctx.fillStyle = '#222228';
+      ctx.fillRect(-cr.w / 2, -cr.h / 2, cr.w, cr.h);
+      ctx.strokeStyle = '#9a9aa4';
+      ctx.lineWidth = 0.045;
+      ctx.strokeRect(-cr.w / 2 + 0.02, -cr.h / 2 + 0.02, cr.w - 0.04, cr.h - 0.04);
+      ctx.beginPath();
+      ctx.moveTo(-cr.w / 2 + 0.06, -cr.h / 2 + 0.06);
+      ctx.lineTo( cr.w / 2 - 0.06,  cr.h / 2 - 0.06);
+      ctx.moveTo( cr.w / 2 - 0.06, -cr.h / 2 + 0.06);
+      ctx.lineTo(-cr.w / 2 + 0.06,  cr.h / 2 - 0.06);
+      ctx.stroke();
       ctx.restore();
     }
   }
