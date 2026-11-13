@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ASHLINE // Monochrome Trials Prototype</title>
+  <title>ASHLINE // Monochrome Trials</title>
   <script src="https://cdn.jsdelivr.net/npm/planck/dist/planck.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
@@ -27,13 +27,30 @@
       box-shadow: 6px 6px 0 rgba(255, 255, 255, 0.08);
     }
     .panel-inner { transform: skewX(10deg); }
+    .title-row {
+      display: flex; align-items: center; gap: 14px;
+    }
     .title {
-      font-size: 22px; letter-spacing: 4px; font-weight: 900;
+      font-size: 22px; letter-spacing: 3px; font-weight: 900;
       text-transform: uppercase; color: #f2f2f5;
+    }
+    .track-pills {
+      display: flex; gap: 5px; pointer-events: auto;
+    }
+    .track-btn {
+      background: #141418; color: #8f8f96;
+      border: 1px solid #3a3a42;
+      font-family: monospace; font-size: 11px; font-weight: 700;
+      padding: 2px 8px; cursor: pointer;
+      transition: background 0.1s, color 0.1s;
+    }
+    .track-btn:hover { color: #f2f2f5; border-color: #7c7c85; }
+    .track-btn.active {
+      background: #f2f2f5; color: #070708; border-color: #f2f2f5;
     }
     .sub {
       font-family: monospace; font-size: 11px; letter-spacing: 1.5px;
-      color: #8f8f96; margin-top: 3px;
+      color: #8f8f96; margin-top: 4px;
     }
     .stats { display: flex; gap: 22px; align-items: baseline; }
     .stat-time   { width: 132px; }
@@ -83,7 +100,14 @@
   <div id="hud">
     <div class="panel">
       <div class="panel-inner">
-        <div class="title">ASHLINE // 01</div>
+        <div class="title-row">
+          <div class="title" id="ui-title">ASHLINE // 01</div>
+          <div class="track-pills">
+            <button class="track-btn active" data-track="0">01</button>
+            <button class="track-btn" data-track="1">02</button>
+            <button class="track-btn" data-track="2">03</button>
+          </div>
+        </div>
         <div class="sub" id="ui-net">CONNECTING TO LAB ROOM...</div>
       </div>
     </div>
@@ -100,13 +124,13 @@
     <div class="banner-box">
       <div>
         <div class="banner-main" id="banner-title">BAILED</div>
-        <div class="banner-sub" id="banner-sub">[SPACE / BKSP] CHECKPOINT &nbsp;//&nbsp; [R / DEL] FULL RESTART</div>
+        <div class="banner-sub" id="banner-sub">[SPACE / BKSP] CHECKPOINT &nbsp;//&nbsp; [R] FULL RESTART</div>
       </div>
     </div>
   </div>
 
   <div id="controls-hint">
-    <b>W / ↑</b> GAS &nbsp;·&nbsp; <b>S / ↓</b> BRAKE / REV &nbsp;·&nbsp; <b>A / ←</b> LEAN BACK &nbsp;·&nbsp; <b>D / →</b> LEAN FWD &nbsp;·&nbsp; <b>SPACE / BKSP</b> CHECKPOINT &nbsp;·&nbsp; <b>R / DEL</b> RESTART
+    <b>W / ↑</b> GAS &nbsp;·&nbsp; <b>S / ↓</b> BRAKE / REV &nbsp;·&nbsp; <b>A / ←</b> LEAN BACK &nbsp;·&nbsp; <b>D / →</b> LEAN FWD &nbsp;·&nbsp; <b>SPACE / BKSP</b> CHECKPOINT &nbsp;·&nbsp; <b>R</b> RESTART &nbsp;·&nbsp; <b>1-3</b> TRACK
   </div>
 
   <canvas id="game"></canvas>
@@ -122,24 +146,24 @@
       brake:      ['KeyS', 'ArrowDown'],
       leanBack:   ['KeyA', 'ArrowLeft'],
       leanFwd:    ['KeyD', 'ArrowRight'],
-      restart:    ['KeyR', 'Delete'],
+      restart:    ['KeyR'],
       checkpoint: ['Space', 'Backspace']
     },
 
     multiplayer: {
       enabled:           true,
-      sendHz:            10,    // Updates/sec while riding (10Hz stays well inside CF Free Tier)
-      idleSendMs:        1000,  // Heartbeat rate when parked
-      interpSpeed:       18,    // Ghost smoothing speed
-      snapDistance:      4.5,   // Teleport immediately on checkpoint/restart instead of sliding
-      ghostTimeoutMs:    4500,  // Remove ghost if silent for 4.5s
-      trailLength:       28,    // Segments per technicolor tracer ribbon
-      trailSampleDist:   0.18,  // Min meters moved before pushing new tracer node
-      ghostFillAlpha:    0.34,  // Translucent neon ghost body fill
-      ghostStrokeAlpha:  0.88,  // Bright neon ghost rim & limb stroke
-      tracerWidth:       0.12,  // Tracer ribbon core width (meters)
-      chromaticShiftDeg: 58,    // Hue offset between helmet, front wheel & rear wheel tracers
-      crashBurstCount:   20     // Technicolor confetti shards when a friend bails
+      sendHz:            10,
+      idleSendMs:        1000,
+      interpSpeed:       18,
+      snapDistance:      4.5,
+      ghostTimeoutMs:    4500,
+      trailLength:       28,
+      trailSampleDist:   0.18,
+      ghostFillAlpha:    0.34,
+      ghostStrokeAlpha:  0.88,
+      tracerWidth:       0.12,
+      chromaticShiftDeg: 58,
+      crashBurstCount:   20
     },
 
     physics: {
@@ -302,65 +326,171 @@
   };
 
   // ============================================================================
-  // COURSE / TRACK LAYOUT (~360m Extended Test Track)
+  // TRACK DEFINITIONS (3 Full Courses)
   // ============================================================================
-  const TRACK_VERTS = [
-    [-16, 12], [-12, 0], [14, 0],
-    [22, 2.8], [24.5, 3.8], [24.5, -14],
-    [30.5, -14], [30.5, 2.3], [36, 0.3], [44, 0.0],
-    [58, 0.0],
-    [66, 2.2], [72, 5.6], [72, -16],
-    [81, -16], [81, 4.4], [91, -0.5], [98, -1.6],
-    [104, -1.6], [104.35, -1.15], [108.5, -1.15], [108.85, -0.65], [113.5, -0.65],
-    [122, 4.4], [126, 4.4],
-    [136, 0.2], [144, 0.0],
-    [149, 1.3], [153, 1.5], [158, 0.0],
-    [163, 1.6], [167, 1.8], [172, 0.2], [178, 0.2],
-    [185, 2.8], [189, 4.0], [189, -15],
-    [196.5, -15], [196.5, 2.8], [206, -1.2], [214, -1.5],
-    [246, -1.5],
-    [246.3, -1.10], [250.5, -1.10], [250.8, -0.68], [255.0, -0.68], [255.3, -0.25], [259.5, -0.25],
-    [269, 4.8], [274, 4.8],
-    [288, -3.5], [295, -4.5],
-    [304, -1.5], [310, 2.2], [310, -20],
-    [322, -20], [322, 1.0], [334, -3.8], [344, -4.2], [372, -4.2], [374, 10]
-  ];
+  const TRACKS = [
+    {
+      name: '01 // CONCRETE YARD',
+      verts: [
+        [-16, 12], [-12, 0], [14, 0],
+        [22, 2.8], [24.5, 3.8], [24.5, -14],
+        [30.5, -14], [30.5, 2.3], [36, 0.3], [44, 0.0],
+        [58, 0.0],
+        [66, 2.2], [72, 5.6], [72, -16],
+        [81, -16], [81, 4.4], [91, -0.5], [98, -1.6],
+        [104, -1.6], [104.35, -1.15], [108.5, -1.15], [108.85, -0.65], [113.5, -0.65],
+        [122, 4.4], [126, 4.4],
+        [136, 0.2], [144, 0.0],
+        [149, 1.3], [153, 1.5], [158, 0.0],
+        [163, 1.6], [167, 1.8], [172, 0.2], [178, 0.2],
+        [185, 2.8], [189, 4.0], [189, -15],
+        [196.5, -15], [196.5, 2.8], [206, -1.2], [214, -1.5],
+        [246, -1.5],
+        [246.3, -1.10], [250.5, -1.10], [250.8, -0.68], [255.0, -0.68], [255.3, -0.25], [259.5, -0.25],
+        [269, 4.8], [274, 4.8],
+        [288, -3.5], [295, -4.5],
+        [304, -1.5], [310, 2.2], [310, -20],
+        [322, -20], [322, 1.0], [334, -3.8], [344, -4.2], [372, -4.2], [374, 10]
+      ],
+      obstacles: [
+        { type: 'pipe', x: 45.2, y: 0.12, r: 0.52 },
+        { type: 'pipe', x: 48.8, y: 0.20, r: 0.58 },
+        { type: 'pipe', x: 52.4, y: 0.14, r: 0.50 },
+        { type: 'pipe', x: 55.9, y: 0.24, r: 0.60 },
+        { type: 'box',  x: 100.5, y: -1.15, w: 3.4, h: 0.65, angle: 0.16 },
+        { type: 'box',  x: 218.5, y: -1.10, w: 4.2, h: 0.55, angle: 0.22 },
+        { type: 'pipe', x: 224.0, y: -1.36, r: 0.52 },
+        { type: 'box',  x: 229.5, y: -0.95, w: 4.8, h: 0.70, angle: 0.05 },
+        { type: 'pipe', x: 236.5, y: -1.32, r: 0.55 },
+        { type: 'pipe', x: 240.0, y: -1.24, r: 0.60 }
+      ],
+      checkpoints: [
+        { x: 3,   groundY: 0.0 },
+        { x: 38,  groundY: 0.225 },
+        { x: 84,  groundY: 2.93 },
+        { x: 124, groundY: 4.4 },
+        { x: 175, groundY: 0.2 },
+        { x: 212, groundY: -1.425 },
+        { x: 272, groundY: 4.8 }
+      ],
+      finishX: 352,
+      finishY: -4.2,
+      tags: [
+        { x: 18,  y:  0.3, text: 'SEND',      scale: 1.3, rot: -0.25 },
+        { x: 65,  y:  1.0, text: 'NO BRAKES', scale: 0.9, rot: -0.45 },
+        { x: 90,  y:  0.2, text: 'DROP',      scale: 1.4, rot:  0.42 },
+        { x: 118, y:  1.5, text: 'CLIMB//',   scale: 1.1, rot: -0.52 },
+        { x: 162, y: -0.8, text: 'WHOOPS',    scale: 1.2, rot:  0.0 },
+        { x: 228, y: -3.2, text: 'TECH//02',  scale: 1.3, rot:  0.0 },
+        { x: 263, y:  1.0, text: 'GRIP',      scale: 1.3, rot: -0.48 },
+        { x: 303, y: -4.8, text: 'BIG AIR',   scale: 1.5, rot: -0.32 },
+        { x: 349, y: -5.8, text: 'FIN',       scale: 1.6, rot:  0.0 }
+      ]
+    },
 
-  const OBSTACLES = [
-    { type: 'pipe', x: 45.2, y: 0.12, r: 0.52 },
-    { type: 'pipe', x: 48.8, y: 0.20, r: 0.58 },
-    { type: 'pipe', x: 52.4, y: 0.14, r: 0.50 },
-    { type: 'pipe', x: 55.9, y: 0.24, r: 0.60 },
-    { type: 'box',  x: 100.5, y: -1.15, w: 3.4, h: 0.65, angle: 0.16 },
-    { type: 'box',  x: 218.5, y: -1.10, w: 4.2, h: 0.55, angle: 0.22 },
-    { type: 'pipe', x: 224.0, y: -1.36, r: 0.52 },
-    { type: 'box',  x: 229.5, y: -0.95, w: 4.8, h: 0.70, angle: 0.05 },
-    { type: 'pipe', x: 236.5, y: -1.32, r: 0.55 },
-    { type: 'pipe', x: 240.0, y: -1.24, r: 0.60 }
-  ];
+    {
+      name: '02 // SKYLINE TRUSS',
+      verts: [
+        [-16, 12], [-12, 0], [12, 0],
+        [20, 3.2], [20, -16], [26.5, -16], [26.5, 1.8], [34, -0.5], [40, -0.5],
+        [62, -0.5],
+        [74, -4.5], [80, -4.5],
+        [87, -2.0], [92, 1.2], [92, -18],
+        [101, -18], [101, 0.0], [110, -2.5], [116, -2.5],
+        [120, -2.5], [120.3, -2.08], [124.5, -2.08], [124.8, -1.65], [129.0, -1.65], [129.3, -1.22], [133.5, -1.22], [133.8, -0.80], [138.0, -0.80],
+        [148, 4.6], [154, 4.6],
+        [164, 0.0], [170, 0.0],
+        [176, 1.8], [176, -15], [182.5, -15], [182.5, 0.6], [190, -2.0], [214, -2.0],
+        [220, 0.2], [225, 0.4], [230, -1.4], [236, 0.6], [241, 0.8], [246, -1.0], [252, -1.0],
+        [260, 1.8], [264, 3.2], [264, -18], [272.5, -18], [272.5, 1.6], [282, -2.2], [314, -2.2],
+        [320, 0.5], [325, 2.5], [325, -20], [334, -20], [334, 1.2], [344, -2.8], [352, -3.0], [380, -3.0], [382, 10]
+      ],
+      obstacles: [
+        { type: 'box',  x: 44.5,  y:  0.00, w: 4.4, h: 0.55, angle:  0.20 },
+        { type: 'box',  x: 51.0,  y:  0.15, w: 4.2, h: 0.50, angle:  0.00 },
+        { type: 'pipe', x: 56.5,  y: -0.34, r: 0.54 },
+        { type: 'pipe', x: 59.8,  y: -0.28, r: 0.58 },
+        { type: 'pipe', x: 199.5, y: -1.84, r: 0.52 },
+        { type: 'pipe', x: 203.2, y: -1.78, r: 0.56 },
+        { type: 'box',  x: 293.5, y: -1.72, w: 4.4, h: 0.55, angle:  0.18 },
+        { type: 'box',  x: 300.5, y: -1.35, w: 4.0, h: 0.55, angle: -0.10 },
+        { type: 'pipe', x: 307.2, y: -2.02, r: 0.56 }
+      ],
+      checkpoints: [
+        { x: 3,   groundY:  0.0 },
+        { x: 37,  groundY: -0.5 },
+        { x: 113, groundY: -2.5 },
+        { x: 151, groundY:  4.6 },
+        { x: 210, groundY: -2.0 },
+        { x: 250, groundY: -1.0 },
+        { x: 312, groundY: -2.2 }
+      ],
+      finishX: 362,
+      finishY: -3.0,
+      tags: [
+        { x: 15,  y:  0.2, text: 'ROOFTOP',  scale: 1.2, rot: -0.36 },
+        { x: 51,  y: -2.2, text: 'TRUSS//',  scale: 1.3, rot:  0.0 },
+        { x: 88,  y: -3.0, text: 'FULL GAS', scale: 1.2, rot: -0.42 },
+        { x: 141, y:  0.4, text: 'TOWER',    scale: 1.2, rot: -0.48 },
+        { x: 173, y: -1.8, text: 'CHUTE',    scale: 1.2, rot: -0.22 },
+        { x: 230, y: -3.2, text: 'FLOW',     scale: 1.4, rot:  0.0 },
+        { x: 298, y: -4.0, text: 'IRON',     scale: 1.3, rot:  0.0 },
+        { x: 359, y: -4.8, text: 'FIN',      scale: 1.6, rot:  0.0 }
+      ]
+    },
 
-  const CHECKPOINTS = [
-    { x: 3,   groundY: 0.0 },
-    { x: 38,  groundY: 0.225 },
-    { x: 84,  groundY: 2.93 },
-    { x: 124, groundY: 4.4 },
-    { x: 175, groundY: 0.2 },
-    { x: 212, groundY: -1.425 },
-    { x: 272, groundY: 4.8 }
-  ];
-  const FINISH_X = 352;
-  const FINISH_Y = -4.2;
-
-  const GRAFFITI_TAGS = [
-    { x: 18,  y:  0.3, text: 'SEND',      scale: 1.3, rot: -0.25 },
-    { x: 65,  y:  1.0, text: 'NO BRAKES', scale: 0.9, rot: -0.45 },
-    { x: 90,  y:  0.2, text: 'DROP',      scale: 1.4, rot:  0.42 },
-    { x: 118, y:  1.5, text: 'CLIMB//',   scale: 1.1, rot: -0.52 },
-    { x: 162, y: -0.8, text: 'WHOOPS',    scale: 1.2, rot:  0.0 },
-    { x: 228, y: -3.2, text: 'TECH//02',  scale: 1.3, rot:  0.0 },
-    { x: 263, y:  1.0, text: 'GRIP',      scale: 1.3, rot: -0.48 },
-    { x: 303, y: -4.8, text: 'BIG AIR',   scale: 1.5, rot: -0.32 },
-    { x: 349, y: -5.8, text: 'FIN',       scale: 1.6, rot:  0.0 }
+    {
+      name: '03 // QUARRY ABYSS',
+      verts: [
+        [-16, 12], [-12, 0], [14, 0],
+        [14.3, 0.44], [18.5, 0.44], [18.8, 0.90], [23.5, 0.90],
+        [35, 0.90], [41, 2.8], [41, -16], [48, -16], [48, 1.4], [56, -1.8], [62, -1.8],
+        [68, 0.4], [73, 0.6], [78, -2.0], [84, 0.5], [89, 0.7], [94, -2.2],
+        [102, 1.4], [106, 3.0], [106, -18], [115, -18], [115, 1.6], [125, -2.6], [132, -2.6],
+        [164, -2.6],
+        [176, 4.4], [182, 4.4],
+        [192, -1.5], [198, -3.5], [204, -1.2], [208, 0.5], [208, -18],
+        [216.5, -18], [216.5, -0.5], [226, -4.5], [236, -4.5],
+        [236.3, -4.05], [240.5, -4.05], [240.8, -3.60], [245.0, -3.60], [245.3, -3.15], [250.0, -3.15],
+        [260, 2.4], [266, 2.4],
+        [278, -3.0], [304, -3.0],
+        [318, -8.5], [326, -8.5], [336, -3.5], [343, 0.8], [343, -24],
+        [356, -24], [356, -0.8], [368, -5.8], [378, -6.0], [404, -6.0], [406, 10]
+      ],
+      obstacles: [
+        { type: 'pipe', x: 26.8,  y:  1.06, r: 0.52 },
+        { type: 'pipe', x: 30.2,  y:  1.12, r: 0.56 },
+        { type: 'pipe', x: 136.5, y: -2.44, r: 0.52 },
+        { type: 'box',  x: 142.0, y: -2.05, w: 4.0, h: 0.55, angle: 0.24 },
+        { type: 'box',  x: 148.2, y: -1.55, w: 3.8, h: 0.55, angle: 0.00 },
+        { type: 'pipe', x: 154.5, y: -2.40, r: 0.58 },
+        { type: 'pipe', x: 158.2, y: -2.35, r: 0.60 },
+        { type: 'pipe', x: 282.5, y: -2.86, r: 0.48 },
+        { type: 'pipe', x: 287.5, y: -2.84, r: 0.50 },
+        { type: 'box',  x: 292.5, y: -2.60, w: 3.6, h: 0.50, angle: 0.14 }
+      ],
+      checkpoints: [
+        { x: 3,   groundY:  0.0 },
+        { x: 59,  groundY: -1.8 },
+        { x: 128, groundY: -2.6 },
+        { x: 179, groundY:  4.4 },
+        { x: 229, groundY: -4.5 },
+        { x: 263, groundY:  2.4 },
+        { x: 299, groundY: -3.0 }
+      ],
+      finishX: 388,
+      finishY: -6.0,
+      tags: [
+        { x: 21,  y: -1.0, text: 'QUARRY',    scale: 1.3, rot:  0.0 },
+        { x: 78,  y: -4.2, text: 'WHOOPS//',  scale: 1.3, rot:  0.0 },
+        { x: 148, y: -4.6, text: 'GAUNTLET',  scale: 1.3, rot:  0.0 },
+        { x: 169, y: -0.4, text: 'CLIMB',     scale: 1.3, rot: -0.50 },
+        { x: 202, y: -4.2, text: 'ABYSS',     scale: 1.4, rot: -0.35 },
+        { x: 254, y: -1.5, text: 'STEP UP',   scale: 1.2, rot: -0.48 },
+        { x: 334, y: -6.5, text: 'MEGA GAP',  scale: 1.5, rot: -0.52 },
+        { x: 385, y: -7.8, text: 'FIN',       scale: 1.6, rot:  0.0 }
+      ]
+    }
   ];
 
   const SKYLINE = Array.from({ length: 64 }, (_, i) => ({
@@ -406,24 +536,10 @@
   }
   const grainPattern = createGrainPattern();
 
-  // --- Input Handling ---
-  const keys = { gas: false, brake: false, back: false, fwd: false };
-  const keyLookup = {};
-  for (const code of CONFIG.controls.gas)      keyLookup[code] = 'gas';
-  for (const code of CONFIG.controls.brake)    keyLookup[code] = 'brake';
-  for (const code of CONFIG.controls.leanBack) keyLookup[code] = 'back';
-  for (const code of CONFIG.controls.leanFwd)  keyLookup[code] = 'fwd';
-
-  window.addEventListener('keydown', (e) => {
-    if (keyLookup[e.code]) { e.preventDefault(); keys[keyLookup[e.code]] = true; }
-    if (CONFIG.controls.restart.includes(e.code))    { e.preventDefault(); resetFullRun(); }
-    if (CONFIG.controls.checkpoint.includes(e.code)) { e.preventDefault(); respawnCheckpoint(); }
-  });
-  window.addEventListener('keyup', (e) => {
-    if (keyLookup[e.code]) keys[keyLookup[e.code]] = false;
-  });
-
   // --- Game State ---
+  let currentTrackIdx = 0;
+  let activeTrack = TRACKS[0];
+
   let world, chassis, rearWheel, frontWheel, riderBody;
   let rearJoint, frontJoint, riderJoint;
   let rearRestLocal, frontRestLocal, rearAxisUnit, frontAxisUnit;
@@ -436,6 +552,7 @@
   let camY = CONFIG.camera.initialY;
   let camZoom = CONFIG.camera.initialZoom;
 
+  const uiTitle = document.getElementById('ui-title');
   const uiTime = document.getElementById('ui-time');
   const uiFaults = document.getElementById('ui-faults');
   const uiSpeed = document.getElementById('ui-speed');
@@ -443,15 +560,58 @@
   const banner = document.getElementById('banner');
   const bannerTitle = document.getElementById('banner-title');
   const bannerSub = document.getElementById('banner-sub');
+  const trackBtns = document.querySelectorAll('.track-btn');
+
+  // --- Input Handling ---
+  const keys = { gas: false, brake: false, back: false, fwd: false };
+  const keyLookup = {};
+  for (const code of CONFIG.controls.gas)      keyLookup[code] = 'gas';
+  for (const code of CONFIG.controls.brake)    keyLookup[code] = 'brake';
+  for (const code of CONFIG.controls.leanBack) keyLookup[code] = 'back';
+  for (const code of CONFIG.controls.leanFwd)  keyLookup[code] = 'fwd';
+
+  window.addEventListener('keydown', (e) => {
+    if (keyLookup[e.code]) { e.preventDefault(); keys[keyLookup[e.code]] = true; }
+    if (CONFIG.controls.restart.includes(e.code))    { e.preventDefault(); resetFullRun(); }
+    if (CONFIG.controls.checkpoint.includes(e.code)) { e.preventDefault(); respawnCheckpoint(); }
+    if (e.code === 'Enter' && finished)              { e.preventDefault(); advanceAfterFinish(); }
+    if (e.code === 'Digit1') { e.preventDefault(); selectTrack(0); }
+    if (e.code === 'Digit2') { e.preventDefault(); selectTrack(1); }
+    if (e.code === 'Digit3') { e.preventDefault(); selectTrack(2); }
+  });
+  window.addEventListener('keyup', (e) => {
+    if (keyLookup[e.code]) keys[keyLookup[e.code]] = false;
+  });
+
+  trackBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      btn.blur();
+      selectTrack(Number(btn.dataset.track));
+    });
+  });
+
+  function selectTrack(idx) {
+    if (idx < 0 || idx >= TRACKS.length) return;
+    currentTrackIdx = idx;
+    activeTrack = TRACKS[idx];
+    uiTitle.textContent = `ASHLINE // ${activeTrack.name}`;
+    trackBtns.forEach((b) => b.classList.toggle('active', Number(b.dataset.track) === idx));
+    resetFullRun();
+  }
+
+  function advanceAfterFinish() {
+    const nextIdx = (currentTrackIdx + 1) % TRACKS.length;
+    selectTrack(nextIdx);
+  }
 
   // ============================================================================
-  // MULTIPLAYER GHOST NETWORKING (WebSocket + Binary Pose Sync)
+  // MULTIPLAYER GHOST NETWORKING
   // ============================================================================
   const ghosts = new Map();
   let ws = null;
   let onlineCount = 1;
   let lastSendTime = 0;
-  let lastSentX = 0, lastSentY = 0, lastSentAng = 0;
+  let lastSentX = 0, lastSentY = 0, lastSentAng = 0, lastSentTrack = -1;
   const txBuffer = new Float32Array(13);
 
   function connectMultiplayer() {
@@ -498,33 +658,37 @@
         const hue = dv.getUint16(2, true);
         const pose = new Float32Array(event.data, 4, 13);
         const now = performance.now();
+        const flags = Math.round(pose[12]);
+        const isCrashed = (flags & 1) !== 0;
+        const trackIdx = flags >> 2;
 
         let g = ghosts.get(id);
         if (!g) {
           g = {
             id,
             hue,
+            trackIdx,
             cur: new Float32Array(pose),
             target: new Float32Array(pose),
             trail: [],
-            wasCrashed: false,
+            wasCrashed: isCrashed,
             lastSeen: now
           };
           ghosts.set(id, g);
         } else {
           const jumpDist = Math.hypot(pose[0] - g.cur[0], pose[1] - g.cur[1]);
+          const switchedTrack = g.trackIdx !== trackIdx;
           g.hue = hue;
+          g.trackIdx = trackIdx;
           g.target.set(pose);
           g.lastSeen = now;
-          // Snap cleanly if friend respawned at a checkpoint or restarted
-          if (jumpDist > CONFIG.multiplayer.snapDistance) {
+          if (switchedTrack || jumpDist > CONFIG.multiplayer.snapDistance) {
             g.cur.set(pose);
             g.trail.length = 0;
           }
         }
 
-        const isCrashed = (Math.round(pose[12]) & 1) !== 0;
-        if (isCrashed && !g.wasCrashed) {
+        if (isCrashed && !g.wasCrashed && g.trackIdx === currentTrackIdx) {
           spawnTechnicolorBurst({ x: pose[9], y: pose[10] }, hue);
         }
         g.wasCrashed = isCrashed;
@@ -541,12 +705,12 @@
   function sendLocalPose(now) {
     if (!ws || ws.readyState !== WebSocket.OPEN || !chassis) return;
     const minMs = 1000 / CONFIG.multiplayer.sendHz;
-    if (now - lastSendTime < minMs) return;
+    if (now - lastSendTime < minMs && lastSentTrack === currentTrackIdx) return;
 
     const cp = chassis.getPosition();
     const ca = chassis.getAngle();
     const moved = Math.abs(cp.x - lastSentX) + Math.abs(cp.y - lastSentY) + Math.abs(ca - lastSentAng);
-    if (moved < 0.004 && now - lastSendTime < CONFIG.multiplayer.idleSendMs) return;
+    if (moved < 0.004 && lastSentTrack === currentTrackIdx && now - lastSendTime < CONFIG.multiplayer.idleSendMs) return;
 
     const rw = rearWheel.getPosition();
     const fw = frontWheel.getPosition();
@@ -564,7 +728,7 @@
     txBuffer[9]  = rd.x;
     txBuffer[10] = rd.y;
     txBuffer[11] = riderBody.getAngle();
-    txBuffer[12] = (crashed ? 1 : 0) | (finished ? 2 : 0);
+    txBuffer[12] = (crashed ? 1 : 0) | (finished ? 2 : 0) | (currentTrackIdx << 2);
 
     try {
       ws.send(txBuffer.buffer);
@@ -572,6 +736,7 @@
       lastSentX = cp.x;
       lastSentY = cp.y;
       lastSentAng = ca;
+      lastSentTrack = currentTrackIdx;
     } catch {}
   }
 
@@ -588,14 +753,14 @@
     banner.classList.remove('visible');
 
     const terrainBody = world.createBody();
-    const chain = new pl.Chain(TRACK_VERTS.map(([x, y]) => pl.Vec2(x, y)), false);
+    const chain = new pl.Chain(activeTrack.verts.map(([x, y]) => pl.Vec2(x, y)), false);
     const tf = terrainBody.createFixture(chain, {
       friction: CONFIG.physics.terrainFriction,
       restitution: CONFIG.physics.terrainRestitution
     });
     tf.setUserData('terrain');
 
-    for (const ob of OBSTACLES) {
+    for (const ob of activeTrack.obstacles) {
       const b = world.createBody({ position: pl.Vec2(ob.x, ob.y), angle: ob.angle || 0 });
       const shape = ob.type === 'pipe' ? new pl.Circle(ob.r) : new pl.Box(ob.w / 2, ob.h / 2);
       const f = b.createFixture(shape, {
@@ -766,15 +931,15 @@
     riderBody.applyLinearImpulse(pl.Vec2(0, CONFIG.rider.crashImpulseY), riderBody.getWorldCenter(), true);
     spawnDust(riderBody.getPosition(), CONFIG.visuals.dustCrashCount, 5.5);
     bannerTitle.textContent = 'BAILED';
-    bannerSub.textContent = '[SPACE / BKSP] CHECKPOINT (+1 FAULT)  //  [R / DEL] FULL RESTART';
+    bannerSub.textContent = '[SPACE / BKSP] CHECKPOINT (+1 FAULT)  //  [R] FULL RESTART';
     banner.classList.add('visible');
   }
 
   function respawnCheckpoint() {
-    if (finished) { resetFullRun(); return; }
+    if (finished) { advanceAfterFinish(); return; }
     faults++;
     particles = [];
-    buildWorld(CHECKPOINTS[currentCheckpoint]);
+    buildWorld(activeTrack.checkpoints[currentCheckpoint]);
   }
 
   function resetFullRun() {
@@ -783,7 +948,9 @@
     runTime = 0;
     timerStarted = false;
     particles = [];
-    buildWorld(CHECKPOINTS[0]);
+    buildWorld(activeTrack.checkpoints[0]);
+    camX = activeTrack.checkpoints[0].x + CONFIG.camera.offsetX;
+    camY = activeTrack.checkpoints[0].groundY + CONFIG.camera.offsetY;
   }
 
   function spawnDust(pos, count, speed) {
@@ -917,13 +1084,16 @@
       applySuspensionLimits(frontWheel, frontRestLocal, frontAxisUnit);
 
       const bx = chassis.getPosition().x;
-      for (let i = currentCheckpoint + 1; i < CHECKPOINTS.length; i++) {
-        if (bx >= CHECKPOINTS[i].x) currentCheckpoint = i;
+      for (let i = currentCheckpoint + 1; i < activeTrack.checkpoints.length; i++) {
+        if (bx >= activeTrack.checkpoints[i].x) currentCheckpoint = i;
       }
-      if (bx >= FINISH_X) {
+      if (bx >= activeTrack.finishX) {
         finished = true;
-        bannerTitle.textContent = 'TRACK CLEARED';
-        bannerSub.textContent = `TIME ${formatTime(runTime)}  //  FAULTS ${faults}  //  [R / DEL] RIDE AGAIN`;
+        const isLast = currentTrackIdx === TRACKS.length - 1;
+        bannerTitle.textContent = isLast ? 'ALL TRACKS CLEARED' : 'TRACK CLEARED';
+        bannerSub.textContent = isLast
+          ? `TIME ${formatTime(runTime)}  //  FAULTS ${faults}  //  [SPACE / BKSP / ENTER] BACK TO 01  //  [R] RETRY`
+          : `TIME ${formatTime(runTime)}  //  FAULTS ${faults}  //  [SPACE / BKSP / ENTER] NEXT TRACK  //  [R] RETRY`;
         banner.classList.add('visible');
       }
     }
@@ -1019,7 +1189,6 @@
     uiSpeed.textContent = Math.round(speed * 3.6);
   }
 
-  // --- Technicolor Ghost & Tracer Renderer ---
   function drawGhosts(now, dt) {
     const M = CONFIG.multiplayer;
     const alphaLerp = 1 - Math.exp(-M.interpSpeed * dt);
@@ -1029,8 +1198,8 @@
         ghosts.delete(id);
         continue;
       }
+      if (g.trackIdx !== currentTrackIdx) continue;
 
-      // Smoothly interpolate all 4 articulated rigid bodies
       for (let i = 0; i < 12; i++) {
         if (i === 2 || i === 5 || i === 8 || i === 11) {
           g.cur[i] = lerpAngle(g.cur[i], g.target[i], alphaLerp);
@@ -1045,14 +1214,12 @@
       const rdx = g.cur[9], rdy = g.cur[10], rda = g.cur[11];
       const headPos = localToWorld(rdx, rdy, rda, 0.07, 0.48);
 
-      // Record trail sample when ghost moves
       const lastNode = g.trail[g.trail.length - 1];
       if (!lastNode || Math.hypot(cx - lastNode.cx, cy - lastNode.cy) >= M.trailSampleDist) {
         g.trail.push({ rwx, rwy, fwx, fwy, hx: headPos.x, hy: headPos.y, cx, cy });
         if (g.trail.length > M.trailLength) g.trail.shift();
       }
 
-      // 1. Technicolor Additive Vector Tracers (3 chromatic-shifted ribbons)
       if (g.trail.length > 1) {
         ctx.save();
         ctx.globalCompositeOperation = 'lighter';
@@ -1069,7 +1236,6 @@
             const t = i / g.trail.length;
             const segHue = (g.hue + r.hueShift + i * 4 + 360) % 360;
 
-            // Soft outer neon aura
             ctx.strokeStyle = `hsla(${segHue}, 100%, 60%, ${t * 0.20})`;
             ctx.lineWidth = M.tracerWidth * 2.1 * t * r.wMul;
             ctx.beginPath();
@@ -1077,7 +1243,6 @@
             ctx.lineTo(p1[r.kx], p1[r.ky]);
             ctx.stroke();
 
-            // Razor-sharp bright core
             ctx.strokeStyle = `hsla(${segHue}, 100%, 76%, ${t * 0.72})`;
             ctx.lineWidth = M.tracerWidth * 0.55 * t * r.wMul;
             ctx.beginPath();
@@ -1089,13 +1254,11 @@
         ctx.restore();
       }
 
-      // 2. Articulated Neon Ghost Bike & Rider
       const fillCol   = `hsla(${g.hue}, 100%, 58%, ${M.ghostFillAlpha})`;
       const strokeCol = `hsla(${g.hue}, 100%, 75%, ${M.ghostStrokeAlpha})`;
       const accentCol = `hsla(${(g.hue + 45) % 360}, 100%, 72%, 0.85)`;
       const rad = CONFIG.bike.wheelRadius;
 
-      // Ghost Wheels
       for (const [wx, wy, wa] of [[rwx, rwy, rwa], [fwx, fwy, fwa]]) {
         ctx.save();
         ctx.translate(wx, wy);
@@ -1115,7 +1278,6 @@
         ctx.restore();
       }
 
-      // Ghost Suspension
       const pivotRear = localToWorld(cx, cy, ca, -0.32, -0.02);
       const forkCrown = localToWorld(cx, cy, ca, 0.56, 0.34);
       ctx.strokeStyle = strokeCol;
@@ -1125,7 +1287,6 @@
       ctx.moveTo(forkCrown.x, forkCrown.y); ctx.lineTo(fwx, fwy);
       ctx.stroke();
 
-      // Ghost Fairing Silhouette
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(ca);
@@ -1141,7 +1302,6 @@
       ctx.stroke();
       ctx.restore();
 
-      // Ghost Rider IK Limbs & Body
       const footPeg = localToWorld(cx, cy, ca, -0.18, -0.02);
       const grip = localToWorld(cx, cy, ca, 0.40, 0.57);
       const hip = localToWorld(rdx, rdy, rda, -0.04, -0.34);
@@ -1246,11 +1406,14 @@
 
   function drawTrack() {
     const P = CONFIG.palette;
+    const verts = activeTrack.verts;
+    const maxTrackX = verts[verts.length - 1][0] + 20;
+
     ctx.fillStyle = P.trackFill;
     ctx.beginPath();
-    ctx.moveTo(TRACK_VERTS[0][0], -40);
-    for (const [x, y] of TRACK_VERTS) ctx.lineTo(x, y);
-    ctx.lineTo(TRACK_VERTS[TRACK_VERTS.length - 1][0], -40);
+    ctx.moveTo(verts[0][0], -45);
+    for (const [x, y] of verts) ctx.lineTo(x, y);
+    ctx.lineTo(verts[verts.length - 1][0], -45);
     ctx.closePath();
     ctx.fill();
 
@@ -1259,13 +1422,13 @@
     ctx.strokeStyle = P.trackHatch;
     ctx.lineWidth = 0.08;
     ctx.beginPath();
-    for (let x = -25; x < 395; x += 2.2) {
-      ctx.moveTo(x, -25);
-      ctx.lineTo(x + 12, 18);
+    for (let x = -25; x < maxTrackX; x += 2.2) {
+      ctx.moveTo(x, -30);
+      ctx.lineTo(x + 14, 18);
     }
     ctx.stroke();
 
-    for (const tag of GRAFFITI_TAGS) {
+    for (const tag of activeTrack.tags) {
       ctx.save();
       ctx.translate(tag.x, tag.y);
       ctx.scale(1, -1);
@@ -1287,8 +1450,8 @@
     ctx.lineWidth = 0.28;
     ctx.lineCap = 'butt';
     ctx.beginPath();
-    for (let i = 0; i < TRACK_VERTS.length; i++) {
-      const [x, y] = TRACK_VERTS[i];
+    for (let i = 0; i < verts.length; i++) {
+      const [x, y] = verts[i];
       if (i === 0) ctx.moveTo(x, y - 0.14);
       else ctx.lineTo(x, y - 0.14);
     }
@@ -1297,8 +1460,8 @@
     ctx.strokeStyle = P.trackRim;
     ctx.lineWidth = 0.065;
     ctx.beginPath();
-    for (let i = 0; i < TRACK_VERTS.length; i++) {
-      const [x, y] = TRACK_VERTS[i];
+    for (let i = 0; i < verts.length; i++) {
+      const [x, y] = verts[i];
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
@@ -1307,7 +1470,7 @@
 
   function drawObstacles() {
     const P = CONFIG.palette;
-    for (const ob of OBSTACLES) {
+    for (const ob of activeTrack.obstacles) {
       ctx.save();
       ctx.translate(ob.x, ob.y);
       ctx.rotate(ob.angle || 0);
@@ -1332,7 +1495,7 @@
   }
 
   function drawCheckpointsAndFinish() {
-    CHECKPOINTS.forEach((cp, idx) => {
+    activeTrack.checkpoints.forEach((cp, idx) => {
       if (idx === 0) return;
       const active = idx <= currentCheckpoint;
       ctx.save();
@@ -1349,7 +1512,7 @@
     });
 
     ctx.save();
-    ctx.translate(FINISH_X, FINISH_Y);
+    ctx.translate(activeTrack.finishX, activeTrack.finishY);
     ctx.fillStyle = '#f2f2f5';
     ctx.fillRect(-0.08, 0, 0.16, 4.4);
     ctx.fillRect(-0.35, 3.6, 0.7, 0.8);
@@ -1548,7 +1711,7 @@
   }
 
   // --- Main Loop ---
-  buildWorld(CHECKPOINTS[0]);
+  selectTrack(0);
   connectMultiplayer();
 
   function loop(now) {
