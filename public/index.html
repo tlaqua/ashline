@@ -14,7 +14,6 @@
       font-family: 'Impact', 'Arial Narrow', 'Segoe UI', sans-serif;
     }
     canvas { display: block; width: 100vw; height: 100vh; }
-
     #hud {
       position: fixed; top: 20px; left: 24px; right: 24px;
       display: flex; justify-content: space-between; align-items: flex-start;
@@ -30,33 +29,27 @@
     .panel-inner { transform: skewX(10deg); }
     .title {
       font-size: 22px; letter-spacing: 3px; font-weight: 900;
-      text-transform: uppercase; color: #f2f2f5;
-      min-width: 265px;
+      text-transform: uppercase; color: #f2f2f5; min-width: 265px;
     }
     .track-pills {
       display: flex; gap: 4px; flex-wrap: wrap;
-      margin-top: 6px; pointer-events: auto;
-      max-width: 440px;
+      margin-top: 6px; pointer-events: auto; max-width: 440px;
     }
     .track-btn {
-      background: #141418; color: #8f8f96;
-      border: 1px solid #3a3a42;
+      background: #141418; color: #8f8f96; border: 1px solid #3a3a42;
       font-family: monospace; font-size: 11px; font-weight: 700;
-      padding: 2px 6px; cursor: pointer;
-      transition: background 0.1s, color 0.1s;
+      padding: 2px 6px; cursor: pointer; transition: background 0.1s, color 0.1s;
     }
     .track-btn:hover { color: #f2f2f5; border-color: #7c7c85; }
-    .track-btn.active {
-      background: #f2f2f5; color: #070708; border-color: #f2f2f5;
-    }
+    .track-btn.active { background: #f2f2f5; color: #070708; border-color: #f2f2f5; }
     .sub {
       font-family: monospace; font-size: 11px; letter-spacing: 1.5px;
       color: #8f8f96; margin-top: 6px;
     }
     .stats { display: flex; gap: 22px; align-items: baseline; }
-    .stat-time   { width: 132px; }
+    .stat-time { width: 132px; }
     .stat-faults { width: 58px; }
-    .stat-speed  { width: 66px; }
+    .stat-speed { width: 66px; }
     .stat-label {
       font-family: monospace; font-size: 10px; color: #7a7a82;
       letter-spacing: 2px; display: block;
@@ -64,20 +57,16 @@
     .stat-val {
       font-family: 'Courier New', Consolas, monospace;
       font-size: 24px; font-weight: 900; letter-spacing: 0.5px;
-      font-variant-numeric: tabular-nums;
-      display: inline-block;
+      font-variant-numeric: tabular-nums; display: inline-block;
     }
-
     #banner {
       position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
       pointer-events: none; opacity: 0; transition: opacity 0.12s ease; z-index: 20;
     }
     #banner.visible { opacity: 1; }
     .banner-box {
-      background: #09090b;
-      border-top: 3px solid #f2f2f5; border-bottom: 3px solid #f2f2f5;
-      padding: 22px 56px; text-align: center;
-      transform: skewX(-10deg);
+      background: #09090b; border-top: 3px solid #f2f2f5; border-bottom: 3px solid #f2f2f5;
+      padding: 22px 56px; text-align: center; transform: skewX(-10deg);
       box-shadow: 0 20px 60px rgba(0,0,0,0.9);
     }
     .banner-box > div { transform: skewX(10deg); }
@@ -86,13 +75,11 @@
       font-family: monospace; font-size: 13px; letter-spacing: 2px;
       color: #b0b0b8; margin-top: 8px;
     }
-
     #controls-hint {
       position: fixed; bottom: 18px; left: 24px;
       font-family: monospace; font-size: 11px; letter-spacing: 1.2px;
       color: #7c7c85; pointer-events: none;
-      background: rgba(7,7,8,0.72); padding: 6px 12px;
-      border-left: 2px solid #55555c;
+      background: rgba(7,7,8,0.72); padding: 6px 12px; border-left: 2px solid #55555c;
     }
     b { color: #e5e5ea; }
   </style>
@@ -157,195 +144,75 @@
   // ============================================================================
   const CONFIG = {
     controls: {
-      gas:        ['KeyW', 'ArrowUp'],
-      brake:      ['KeyS', 'ArrowDown'],
-      leanBack:   ['KeyA', 'ArrowLeft'],
-      leanFwd:    ['KeyD', 'ArrowRight'],
-      restart:    ['KeyR'],
-      checkpoint: ['Space', 'Backspace']
+      gas: ['KeyW', 'ArrowUp'], brake: ['KeyS', 'ArrowDown'],
+      leanBack: ['KeyA', 'ArrowLeft'], leanFwd: ['KeyD', 'ArrowRight'],
+      restart: ['KeyR'], checkpoint: ['Space', 'Backspace']
     },
-
     multiplayer: {
-      enabled:           true,
-      sendHz:            10,
-      idleSendMs:        1000,
-      interpSpeed:       18,
-      snapDistance:      4.5,
-      ghostTimeoutMs:    4500,
-      trailLength:       28,
-      trailSampleDist:   0.18,
-      ghostFillAlpha:    0.34,
-      ghostStrokeAlpha:  0.88,
-      tracerWidth:       0.12,
-      chromaticShiftDeg: 58,
-      crashBurstCount:   20
+      enabled: true, sendHz: 10, idleSendMs: 1000, interpSpeed: 18,
+      snapDistance: 4.5, ghostTimeoutMs: 4500, trailLength: 28, trailSampleDist: 0.18,
+      ghostFillAlpha: 0.34, ghostStrokeAlpha: 0.88, tracerWidth: 0.12,
+      chromaticShiftDeg: 58, crashBurstCount: 20
     },
-
     physics: {
-      gravityY:           -24,
-      fixedDt:            1 / 120,
-      maxFrameDt:         0.05,
-      velocityIterations: 10,
-      positionIterations: 4,
-      terrainFriction:    1.35,
-      terrainRestitution: 0.0,
-      obstacleFriction:   1.4,
-      obstacleRestitution:0.02,
-      crateDensity:       0.85,
-      crateFriction:      0.75,
-      drumDensity:        1.35,
-      drumFriction:       0.95,
-      seesawDensity:      1.8,
-      seesawReturnSpring: 18,
-      spinnerTorque:      4000,
-      crumbleDelay:       0.32,
-      killFloorY:         -26
+      gravityY: -24, fixedDt: 1 / 120, maxFrameDt: 0.05,
+      velocityIterations: 10, positionIterations: 4,
+      terrainFriction: 1.35, terrainRestitution: 0.0,
+      obstacleFriction: 1.4, obstacleRestitution: 0.02,
+      crateDensity: 0.85, crateFriction: 0.75,
+      drumDensity: 1.35, drumFriction: 0.95,
+      seesawDensity: 1.8, seesawReturnSpring: 18,
+      spinnerTorque: 4000, crumbleDelay: 0.32, killFloorY: -26
     },
-
     bike: {
-      chassisDensity:        4.2,
-      chassisFriction:       0.25,
-      chassisRestitution:    0.05,
-      chassisAngularDamping: 1.4,
-      chassisLinearDamping:  0.08,
-
-      wheelRadius:         0.43,
-      wheelDensity:        1.2,
-      wheelFriction:       1.7,
-      wheelRestitution:    0.05,
-      wheelAngularDamping: 0.35,
-      rearWheelOffset:     { x: -0.78, y: -0.38 },
-      frontWheelOffset:    { x:  0.84, y: -0.38 }
+      chassisDensity: 4.2, chassisFriction: 0.25, chassisRestitution: 0.05,
+      chassisAngularDamping: 1.4, chassisLinearDamping: 0.08,
+      wheelRadius: 0.43, wheelDensity: 1.2, wheelFriction: 1.7,
+      wheelRestitution: 0.05, wheelAngularDamping: 0.35,
+      rearWheelOffset: { x: -0.78, y: -0.38 }, frontWheelOffset: { x: 0.84, y: -0.38 }
     },
-
     suspension: {
-      rearHz:            7.2,
-      rearDamping:       0.76,
-      rearAxis:          { x: 0.16, y: 1.0 },
-
-      frontHz:           6.6,
-      frontDamping:      0.76,
-      frontAxis:         { x: -0.28, y: 1.0 },
-
-      maxExtend:         0.08,
-      maxCompress:       0.20,
-      bumpStopStiffness: 950,
-      bumpStopDamping:   45
+      rearHz: 7.2, rearDamping: 0.76, rearAxis: { x: 0.16, y: 1.0 },
+      frontHz: 6.6, frontDamping: 0.76, frontAxis: { x: -0.28, y: 1.0 },
+      maxExtend: 0.08, maxCompress: 0.20, bumpStopStiffness: 950, bumpStopDamping: 45
     },
-
     drivetrain: {
-      gasMotorSpeed:      -44,
-      gasMaxTorque:        68,
-      frontFreewheelDrag:  0.35,
-
-      brakeRearTorque:     52,
-      brakeFrontTorque:    44,
-
-      reverseEngageSpeed:  0.65,
-      reverseMotorSpeed:   7.5,
-      reverseMaxTorque:    38,
-
-      coastRearDrag:       1.4,
-      coastFrontDrag:      0.25
+      gasMotorSpeed: -44, gasMaxTorque: 68, frontFreewheelDrag: 0.35,
+      brakeRearTorque: 52, brakeFrontTorque: 44,
+      reverseEngageSpeed: 0.65, reverseMotorSpeed: 7.5, reverseMaxTorque: 38,
+      coastRearDrag: 1.4, coastFrontDrag: 0.25
     },
-
     rider: {
-      offset:           { x: -0.14, y: 0.72 },
-      jointOffset:      { x: -0.16, y: 0.32 },
-      torsoDensity:     0.95,
-      headDensity:      0.55,
-      headRestitution:  0.25,
-      angularDamping:   0.8,
-      maxJointAngleRad: 0.68,
-      jointMaxTorque:   38,
-      crashImpulseY:    6
+      offset: { x: -0.14, y: 0.72 }, jointOffset: { x: -0.16, y: 0.32 },
+      torsoDensity: 0.95, headDensity: 0.55, headRestitution: 0.25,
+      angularDamping: 0.8, maxJointAngleRad: 0.68, jointMaxTorque: 38, crashImpulseY: 6
     },
-
     handling: {
-      leanSmoothing:          14,
-      riderTargetLeanRad:     0.60,
-      riderJointGain:         18,
-      riderJointMaxSpeed:     14,
-
-      pitchTorqueGrounded:    48,
-      stationaryWheelieBoost: 24,
-      pitchTorqueAir:         36,
-      neutralAngularDamping:  4.2,
-
-      pumpSensitivity:        0.85,
-      pumpImpulseY:           1.45,
-
-      unpinchDelay:           0.14,
-      unpinchSpeedThreshold:  1.1,
-      unpinchLiftForce:       55,
-      unpinchPullForce:       28
+      leanSmoothing: 14, riderTargetLeanRad: 0.60, riderJointGain: 18, riderJointMaxSpeed: 14,
+      pitchTorqueGrounded: 48, stationaryWheelieBoost: 24, pitchTorqueAir: 36, neutralAngularDamping: 4.2,
+      pumpSensitivity: 0.85, pumpImpulseY: 1.45,
+      unpinchDelay: 0.14, unpinchSpeedThreshold: 1.1, unpinchLiftForce: 55, unpinchPullForce: 28
     },
-
     camera: {
-      initialX:      3,
-      initialY:      2.5,
-      initialZoom:   34,
-      baseZoom:      36,
-      minZoom:       25,
-      maxZoom:       36,
-      speedZoomOut:  0.45,
-      zoomLerp:      0.06,
-      lookAheadX:    0.22,
-      lookAheadY:    0.08,
-      offsetX:       3.2,
-      offsetY:       1.4,
-      lerpX:         0.09,
-      lerpY:         0.08,
-      screenAnchorX: 0.42,
-      screenAnchorY: 0.62
+      initialX: 3, initialY: 2.5, initialZoom: 34, baseZoom: 36, minZoom: 25, maxZoom: 36,
+      speedZoomOut: 0.45, zoomLerp: 0.06, lookAheadX: 0.22, lookAheadY: 0.08,
+      offsetX: 3.2, offsetY: 1.4, lerpX: 0.09, lerpY: 0.08, screenAnchorX: 0.42, screenAnchorY: 0.62
     },
-
     visuals: {
-      maxDpr:            2.5,
-      grainAlpha:        14,
-      dustLandingRear:   4,
-      dustLandingFront:  3,
-      dustCrashCount:    16,
-      dustGasChance:     0.35,
-      dustGravity:       14
+      maxDpr: 2.5, grainAlpha: 14, dustLandingRear: 4, dustLandingFront: 3,
+      dustCrashCount: 16, dustGasChance: 0.35, dustGravity: 14
     },
-
     palette: {
-      skyTop:         '#070709',
-      skyMid:         '#141417',
-      skyBottom:      '#1d1d21',
-      skylineFarFill: '#0c0c0e',
-      skylineFarEdge: '#1b1b1f',
-      skylineMidFill: '#111114',
-      skylineMidEdge: '#28282e',
-      trackFill:      '#0a0a0c',
-      trackHatch:     '#17171b',
-      trackBevel:     '#2d2d33',
-      trackRim:       '#ededf2',
-      pipeOuter:      '#18181c',
-      pipeMid:        '#2b2b31',
-      pipeCore:       '#09090b',
-      pipeRim:        '#e5e5eb',
-      tire:           '#09090b',
-      tread:          '#2c2c32',
-      rim:            '#d8d8e0',
-      spokes:         '#6f6f78',
-      rotor:          '#a0a0aa',
-      swingarm:       '#8b8b94',
-      forkStanchion:  '#d4d4dc',
-      forkSlider:     '#38383f',
-      engine:         '#242429',
-      exhaust:        '#75757e',
-      fairing:        '#ededf3',
-      seat:           '#0a0a0c',
-      bars:           '#f2f2f5',
-      riderLegs:      '#18181c',
-      riderTorso:     '#d8d8e0',
-      riderStripe:    '#09090b',
-      riderArms:      '#f2f2f5',
-      helmet:         '#09090b',
-      visor:          '#f2f2f5',
-      goggles:        '#a0a0aa'
+      skyTop: '#070709', skyMid: '#141417', skyBottom: '#1d1d21',
+      skylineFarFill: '#0c0c0e', skylineFarEdge: '#1b1b1f',
+      skylineMidFill: '#111114', skylineMidEdge: '#28282e',
+      trackFill: '#0a0a0c', trackHatch: '#17171b', trackBevel: '#2d2d33', trackRim: '#ededf2',
+      pipeOuter: '#18181c', pipeMid: '#2b2b31', pipeCore: '#09090b', pipeRim: '#e5e5eb',
+      tire: '#09090b', tread: '#2c2c32', rim: '#d8d8e0', spokes: '#6f6f78', rotor: '#a0a0aa',
+      swingarm: '#8b8b94', forkStanchion: '#d4d4dc', forkSlider: '#38383f',
+      engine: '#242429', exhaust: '#75757e', fairing: '#ededf3', seat: '#0a0a0c', bars: '#f2f2f5',
+      riderLegs: '#18181c', riderTorso: '#d8d8e0', riderStripe: '#09090b',
+      riderArms: '#f2f2f5', helmet: '#09090b', visor: '#f2f2f5', goggles: '#a0a0aa'
     }
   };
 
@@ -359,8 +226,7 @@
           type: 'crate',
           x: startX + xOffset + c * (size + 0.04),
           y: floorY + size * 0.5 + r * (size + 0.02),
-          w: size,
-          h: size
+          w: size, h: size
         });
       }
     }
@@ -374,728 +240,268 @@
     {
       name: '01 // CONCRETE YARD',
       verts: [
-        [-16, 12], [-12, 0], [14, 0],
-        [22, 2.8], [24.5, 3.8], [24.5, -6.5],
-        [30.5, -6.5], [30.5, 2.3], [36, 0.3], [44, 0.0],
-        [58, 0.0],
-        [66, 2.2], [72, 5.6], [72, -6.5],
-        [81, -6.5], [81, 4.4], [91, -0.5], [98, -1.6],
-        [104, -1.6], [104.35, -1.15], [108.5, -1.15], [108.85, -0.65], [113.5, -0.65],
-        [122, 4.4], [126, 4.4],
-        [136, 0.2], [144, 0.0],
-        [149, 1.3], [153, 1.5], [158, 0.0],
-        [163, 1.6], [167, 1.8], [172, 0.2], [178, 0.2],
-        [185, 2.8], [189, 4.0], [189, -6.5],
-        [196.5, -6.5], [196.5, 2.8], [206, -1.2], [214, -1.5],
-        [246, -1.5],
-        [246.3, -1.10], [250.5, -1.10], [250.8, -0.68], [255.0, -0.68], [255.3, -0.25], [259.5, -0.25],
-        [269, 4.8], [274, 4.8],
-        [288, -3.5], [295, -4.5],
-        [304, -1.5], [310, 2.2], [310, -10.5],
-        [322, -10.5], [322, 1.0], [334, -3.8], [344, -4.2], [372, -4.2], [374, 10]
+        [-16,12],[-12,0],[14,0],[22,2.8],[24.5,3.8],[24.5,-6.5],[30.5,-6.5],[30.5,2.3],[36,0.3],[44,0],
+        [58,0],[66,2.2],[72,5.6],[72,-6.5],[81,-6.5],[81,4.4],[91,-0.5],[98,-1.6],
+        [104,-1.6],[104.35,-1.15],[108.5,-1.15],[108.85,-0.65],[113.5,-0.65],[122,4.4],[126,4.4],
+        [136,0.2],[144,0],[149,1.3],[153,1.5],[158,0],[163,1.6],[167,1.8],[172,0.2],[178,0.2],
+        [185,2.8],[189,4],[189,-6.5],[196.5,-6.5],[196.5,2.8],[206,-1.2],[214,-1.5],[246,-1.5],
+        [246.3,-1.1],[250.5,-1.1],[250.8,-0.68],[255,-0.68],[255.3,-0.25],[259.5,-0.25],[269,4.8],[274,4.8],
+        [288,-3.5],[295,-4.5],[304,-1.5],[310,2.2],[310,-10.5],[322,-10.5],[322,1],[334,-3.8],[344,-4.2],[372,-4.2],[374,10]
       ],
-      hazards: [
-        { x0: 24.5,  x1: 30.5,  y: -6.5 },
-        { x0: 72.0,  x1: 81.0,  y: -6.5 },
-        { x0: 189.0, x1: 196.5, y: -6.5 },
-        { x0: 310.0, x1: 322.0, y: -10.5 }
-      ],
+      hazards: [{x0:24.5,x1:30.5,y:-6.5},{x0:72,x1:81,y:-6.5},{x0:189,x1:196.5,y:-6.5},{x0:310,x1:322,y:-10.5}],
       obstacles: [
-        { type: 'pipe', x: 45.2, y: 0.12, r: 0.52 },
-        { type: 'pipe', x: 48.8, y: 0.20, r: 0.58 },
-        { type: 'pipe', x: 52.4, y: 0.14, r: 0.50 },
-        { type: 'pipe', x: 55.9, y: 0.24, r: 0.60 },
-        { type: 'box',  x: 100.5, y: -1.15, w: 3.4, h: 0.65, angle: 0.16 },
-        { type: 'box',  x: 218.5, y: -1.10, w: 4.2, h: 0.55, angle: 0.22 },
-        { type: 'pipe', x: 224.0, y: -1.36, r: 0.52 },
-        { type: 'box',  x: 229.5, y: -0.95, w: 4.8, h: 0.70, angle: 0.05 },
-        { type: 'pipe', x: 236.5, y: -1.32, r: 0.55 },
-        { type: 'pipe', x: 240.0, y: -1.24, r: 0.60 }
+        {type:'pipe',x:45.2,y:0.12,r:0.52},{type:'pipe',x:48.8,y:0.20,r:0.58},{type:'pipe',x:52.4,y:0.14,r:0.50},{type:'pipe',x:55.9,y:0.24,r:0.60},
+        {type:'box',x:100.5,y:-1.15,w:3.4,h:0.65,angle:0.16},{type:'box',x:218.5,y:-1.1,w:4.2,h:0.55,angle:0.22},
+        {type:'pipe',x:224,y:-1.36,r:0.52},{type:'box',x:229.5,y:-0.95,w:4.8,h:0.7,angle:0.05},{type:'pipe',x:236.5,y:-1.32,r:0.55},{type:'pipe',x:240,y:-1.24,r:0.60}
       ],
-      checkpoints: [
-        { x: 3,   groundY: 0.0 },
-        { x: 38,  groundY: 0.225 },
-        { x: 84,  groundY: 2.93 },
-        { x: 124, groundY: 4.4 },
-        { x: 175, groundY: 0.2 },
-        { x: 212, groundY: -1.425 },
-        { x: 272, groundY: 4.8 }
-      ],
-      finishX: 352,
-      finishY: -4.2,
-      tags: [
-        { x: 18,  y:  0.3, text: 'SEND',      scale: 1.3, rot: -0.25 },
-        { x: 65,  y:  1.0, text: 'NO BRAKES', scale: 0.9, rot: -0.45 },
-        { x: 90,  y:  0.2, text: 'DROP',      scale: 1.4, rot:  0.42 },
-        { x: 118, y:  1.5, text: 'CLIMB//',   scale: 1.1, rot: -0.52 },
-        { x: 162, y: -0.8, text: 'WHOOPS',    scale: 1.2, rot:  0.0 },
-        { x: 228, y: -3.2, text: 'TECH//02',  scale: 1.3, rot:  0.0 },
-        { x: 263, y:  1.0, text: 'GRIP',      scale: 1.3, rot: -0.48 },
-        { x: 303, y: -4.8, text: 'BIG AIR',   scale: 1.5, rot: -0.32 },
-        { x: 349, y: -5.8, text: 'FIN',       scale: 1.6, rot:  0.0 }
-      ]
+      checkpoints: [{x:3,groundY:0},{x:38,groundY:0.225},{x:84,groundY:2.93},{x:124,groundY:4.4},{x:175,groundY:0.2},{x:212,groundY:-1.425},{x:272,groundY:4.8}],
+      finishX: 352, finishY: -4.2,
+      tags: [{x:18,y:0.3,text:'SEND',scale:1.3,rot:-0.25},{x:65,y:1,text:'NO BRAKES',scale:0.9,rot:-0.45},{x:90,y:0.2,text:'DROP',scale:1.4,rot:0.42},{x:118,y:1.5,text:'CLIMB//',scale:1.1,rot:-0.52},{x:162,y:-0.8,text:'WHOOPS',scale:1.2,rot:0},{x:228,y:-3.2,text:'TECH//02',scale:1.3,rot:0},{x:263,y:1,text:'GRIP',scale:1.3,rot:-0.48},{x:303,y:-4.8,text:'BIG AIR',scale:1.5,rot:-0.32},{x:349,y:-5.8,text:'FIN',scale:1.6,rot:0}]
     },
-
     {
       name: '02 // SKYLINE TRUSS',
       verts: [
-        [-16, 12], [-12, 0], [12, 0],
-        [20, 3.2], [20, -6.5], [26.5, -6.5], [26.5, 1.8], [34, -0.5], [40, -0.5],
-        [62, -0.5],
-        [74, -4.5], [80, -4.5],
-        [87, -2.0], [92, 1.2], [92, -7.5],
-        [101, -7.5], [101, 0.0], [110, -2.5], [116, -2.5],
-        [120, -2.5], [120.3, -2.08], [124.5, -2.08], [124.8, -1.65], [129.0, -1.65], [129.3, -1.22], [133.5, -1.22], [133.8, -0.80], [138.0, -0.80],
-        [148, 4.6], [154, 4.6],
-        [164, 0.0], [170, 0.0],
-        [176, 1.8], [176, -6.5], [182.5, -6.5], [182.5, 0.6], [190, -2.0], [214, -2.0],
-        [220, 0.2], [225, 0.4], [230, -1.4], [236, 0.6], [241, 0.8], [246, -1.0], [252, -1.0],
-        [260, 1.8], [264, 3.2], [264, -7.5], [272.5, -7.5], [272.5, 1.6], [282, -2.2], [314, -2.2],
-        [320, 0.5], [325, 2.5], [325, -8.5], [334, -8.5], [334, 1.2], [344, -2.8], [352, -3.0], [380, -3.0], [382, 10]
+        [-16,12],[-12,0],[12,0],[20,3.2],[20,-6.5],[26.5,-6.5],[26.5,1.8],[34,-0.5],[40,-0.5],[62,-0.5],
+        [74,-4.5],[80,-4.5],[87,-2],[92,1.2],[92,-7.5],[101,-7.5],[101,0],[110,-2.5],[116,-2.5],
+        [120,-2.5],[120.3,-2.08],[124.5,-2.08],[124.8,-1.65],[129,-1.65],[129.3,-1.22],[133.5,-1.22],[133.8,-0.8],[138,-0.8],[148,4.6],[154,4.6],
+        [164,0],[170,0],[176,1.8],[176,-6.5],[182.5,-6.5],[182.5,0.6],[190,-2],[214,-2],
+        [220,0.2],[225,0.4],[230,-1.4],[236,0.6],[241,0.8],[246,-1],[252,-1],[260,1.8],[264,3.2],[264,-7.5],[272.5,-7.5],[272.5,1.6],[282,-2.2],[314,-2.2],
+        [320,0.5],[325,2.5],[325,-8.5],[334,-8.5],[334,1.2],[344,-2.8],[352,-3],[380,-3],[382,10]
       ],
-      hazards: [
-        { x0: 20.0,  x1: 26.5,  y: -6.5 },
-        { x0: 92.0,  x1: 101.0, y: -7.5 },
-        { x0: 176.0, x1: 182.5, y: -6.5 },
-        { x0: 264.0, x1: 272.5, y: -7.5 },
-        { x0: 325.0, x1: 334.0, y: -8.5 }
-      ],
+      hazards: [{x0:20,x1:26.5,y:-6.5},{x0:92,x1:101,y:-7.5},{x0:176,x1:182.5,y:-6.5},{x0:264,x1:272.5,y:-7.5},{x0:325,x1:334,y:-8.5}],
       obstacles: [
-        { type: 'box',  x: 44.5,  y:  0.00, w: 4.4, h: 0.55, angle:  0.20 },
-        { type: 'box',  x: 51.0,  y:  0.15, w: 4.2, h: 0.50, angle:  0.00 },
-        { type: 'pipe', x: 56.5,  y: -0.34, r: 0.54 },
-        { type: 'pipe', x: 59.8,  y: -0.28, r: 0.58 },
-        { type: 'pipe', x: 199.5, y: -1.84, r: 0.52 },
-        { type: 'pipe', x: 203.2, y: -1.78, r: 0.56 },
-        { type: 'box',  x: 293.5, y: -1.72, w: 4.4, h: 0.55, angle:  0.18 },
-        { type: 'box',  x: 300.5, y: -1.35, w: 4.0, h: 0.55, angle: -0.10 },
-        { type: 'pipe', x: 307.2, y: -2.02, r: 0.56 }
+        {type:'box',x:44.5,y:0,w:4.4,h:0.55,angle:0.2},{type:'box',x:51,y:0.15,w:4.2,h:0.5,angle:0},{type:'pipe',x:56.5,y:-0.34,r:0.54},{type:'pipe',x:59.8,y:-0.28,r:0.58},
+        {type:'pipe',x:199.5,y:-1.84,r:0.52},{type:'pipe',x:203.2,y:-1.78,r:0.56},
+        {type:'box',x:293.5,y:-1.72,w:4.4,h:0.55,angle:0.18},{type:'box',x:300.5,y:-1.35,w:4,h:0.55,angle:-0.1},{type:'pipe',x:307.2,y:-2.02,r:0.56}
       ],
-      checkpoints: [
-        { x: 3,   groundY:  0.0 },
-        { x: 37,  groundY: -0.5 },
-        { x: 113, groundY: -2.5 },
-        { x: 151, groundY:  4.6 },
-        { x: 210, groundY: -2.0 },
-        { x: 250, groundY: -1.0 },
-        { x: 312, groundY: -2.2 }
-      ],
-      finishX: 362,
-      finishY: -3.0,
-      tags: [
-        { x: 15,  y:  0.2, text: 'ROOFTOP',  scale: 1.2, rot: -0.36 },
-        { x: 51,  y: -2.2, text: 'TRUSS//',  scale: 1.3, rot:  0.0 },
-        { x: 88,  y: -3.0, text: 'FULL GAS', scale: 1.2, rot: -0.42 },
-        { x: 141, y:  0.4, text: 'TOWER',    scale: 1.2, rot: -0.48 },
-        { x: 173, y: -1.8, text: 'CHUTE',    scale: 1.2, rot: -0.22 },
-        { x: 230, y: -3.2, text: 'FLOW',     scale: 1.4, rot:  0.0 },
-        { x: 298, y: -4.0, text: 'IRON',     scale: 1.3, rot:  0.0 },
-        { x: 359, y: -4.8, text: 'FIN',      scale: 1.6, rot:  0.0 }
-      ]
+      checkpoints: [{x:3,groundY:0},{x:37,groundY:-0.5},{x:113,groundY:-2.5},{x:151,groundY:4.6},{x:210,groundY:-2},{x:250,groundY:-1},{x:312,groundY:-2.2}],
+      finishX: 362, finishY: -3.0,
+      tags: [{x:15,y:0.2,text:'ROOFTOP',scale:1.2,rot:-0.36},{x:51,y:-2.2,text:'TRUSS//',scale:1.3,rot:0},{x:88,y:-3,text:'FULL GAS',scale:1.2,rot:-0.42},{x:141,y:0.4,text:'TOWER',scale:1.2,rot:-0.48},{x:173,y:-1.8,text:'CHUTE',scale:1.2,rot:-0.22},{x:230,y:-3.2,text:'FLOW',scale:1.4,rot:0},{x:298,y:-4,text:'IRON',scale:1.3,rot:0},{x:359,y:-4.8,text:'FIN',scale:1.6,rot:0}]
     },
-
     {
       name: '03 // QUARRY ABYSS',
       verts: [
-        [-16, 12], [-12, 0], [14, 0],
-        [14.3, 0.44], [18.5, 0.44], [18.8, 0.90], [23.5, 0.90],
-        [35, 0.90], [41, 2.8], [41, -6.5], [48, -6.5], [48, 1.4], [56, -1.8], [62, -1.8],
-        [68, 0.4], [73, 0.6], [78, -2.0], [84, 0.5], [89, 0.7], [94, -2.2],
-        [102, 1.4], [106, 3.0], [106, -7.5], [115, -7.5], [115, 1.6], [125, -2.6], [132, -2.6],
-        [164, -2.6],
-        [176, 4.4], [182, 4.4],
-        [192, -1.5], [198, -3.5], [204, -1.2], [208, 0.5], [208, -8.5],
-        [216.5, -8.5], [216.5, -0.5], [226, -4.5], [236, -4.5],
-        [236.3, -4.05], [240.5, -4.05], [240.8, -3.60], [245.0, -3.60], [245.3, -3.15], [250.0, -3.15],
-        [260, 2.4], [266, 2.4],
-        [278, -3.0], [304, -3.0],
-        [318, -8.5], [326, -8.5], [336, -3.5], [343, 0.8], [343, -12.5],
-        [356, -12.5], [356, -0.8], [368, -5.8], [378, -6.0], [404, -6.0], [406, 10]
+        [-16,12],[-12,0],[14,0],[14.3,0.44],[18.5,0.44],[18.8,0.9],[23.5,0.9],[35,0.9],[41,2.8],[41,-6.5],[48,-6.5],[48,1.4],[56,-1.8],[62,-1.8],
+        [68,0.4],[73,0.6],[78,-2],[84,0.5],[89,0.7],[94,-2.2],[102,1.4],[106,3],[106,-7.5],[115,-7.5],[115,1.6],[125,-2.6],[132,-2.6],[164,-2.6],[176,4.4],[182,4.4],
+        [192,-1.5],[198,-3.5],[204,-1.2],[208,0.5],[208,-8.5],[216.5,-8.5],[216.5,-0.5],[226,-4.5],[236,-4.5],
+        [236.3,-4.05],[240.5,-4.05],[240.8,-3.6],[245,-3.6],[245.3,-3.15],[250,-3.15],[260,2.4],[266,2.4],
+        [278,-3],[304,-3],[318,-8.5],[326,-8.5],[336,-3.5],[343,0.8],[343,-12.5],[356,-12.5],[356,-0.8],[368,-5.8],[378,-6],[404,-6],[406,10]
       ],
-      hazards: [
-        { x0: 41.0,  x1: 48.0,  y: -6.5 },
-        { x0: 106.0, x1: 115.0, y: -7.5 },
-        { x0: 208.0, x1: 216.5, y: -8.5 },
-        { x0: 343.0, x1: 356.0, y: -12.5 }
-      ],
+      hazards: [{x0:41,x1:48,y:-6.5},{x0:106,x1:115,y:-7.5},{x0:208,x1:216.5,y:-8.5},{x0:343,x1:356,y:-12.5}],
       obstacles: [
-        { type: 'pipe', x: 26.8,  y:  1.06, r: 0.52 },
-        { type: 'pipe', x: 30.2,  y:  1.12, r: 0.56 },
-        { type: 'pipe', x: 136.5, y: -2.44, r: 0.52 },
-        { type: 'box',  x: 142.0, y: -2.05, w: 4.0, h: 0.55, angle: 0.24 },
-        { type: 'box',  x: 148.2, y: -1.55, w: 3.8, h: 0.55, angle: 0.00 },
-        { type: 'pipe', x: 154.5, y: -2.40, r: 0.58 },
-        { type: 'pipe', x: 158.2, y: -2.35, r: 0.60 },
-        { type: 'pipe', x: 282.5, y: -2.86, r: 0.48 },
-        { type: 'pipe', x: 287.5, y: -2.84, r: 0.50 },
-        { type: 'box',  x: 292.5, y: -2.60, w: 3.6, h: 0.50, angle: 0.14 }
+        {type:'pipe',x:26.8,y:1.06,r:0.52},{type:'pipe',x:30.2,y:1.12,r:0.56},{type:'pipe',x:136.5,y:-2.44,r:0.52},
+        {type:'box',x:142,y:-2.05,w:4,h:0.55,angle:0.24},{type:'box',x:148.2,y:-1.55,w:3.8,h:0.55,angle:0},
+        {type:'pipe',x:154.5,y:-2.4,r:0.58},{type:'pipe',x:158.2,y:-2.35,r:0.60},{type:'pipe',x:282.5,y:-2.86,r:0.48},{type:'pipe',x:287.5,y:-2.84,r:0.50},{type:'box',x:292.5,y:-2.6,w:3.6,h:0.5,angle:0.14}
       ],
-      checkpoints: [
-        { x: 3,   groundY:  0.0 },
-        { x: 59,  groundY: -1.8 },
-        { x: 128, groundY: -2.6 },
-        { x: 179, groundY:  4.4 },
-        { x: 229, groundY: -4.5 },
-        { x: 263, groundY:  2.4 },
-        { x: 299, groundY: -3.0 }
-      ],
-      finishX: 388,
-      finishY: -6.0,
-      tags: [
-        { x: 21,  y: -1.0, text: 'QUARRY',    scale: 1.3, rot:  0.0 },
-        { x: 78,  y: -4.2, text: 'WHOOPS//',  scale: 1.3, rot:  0.0 },
-        { x: 148, y: -4.6, text: 'GAUNTLET',  scale: 1.3, rot:  0.0 },
-        { x: 169, y: -0.4, text: 'CLIMB',     scale: 1.3, rot: -0.50 },
-        { x: 202, y: -4.2, text: 'ABYSS',     scale: 1.4, rot: -0.35 },
-        { x: 254, y: -1.5, text: 'STEP UP',   scale: 1.2, rot: -0.48 },
-        { x: 334, y: -6.5, text: 'MEGA GAP',  scale: 1.5, rot: -0.52 },
-        { x: 385, y: -7.8, text: 'FIN',       scale: 1.6, rot:  0.0 }
-      ]
+      checkpoints: [{x:3,groundY:0},{x:59,groundY:-1.8},{x:128,groundY:-2.6},{x:179,groundY:4.4},{x:229,groundY:-4.5},{x:263,groundY:2.4},{x:299,groundY:-3}],
+      finishX: 388, finishY: -6.0,
+      tags: [{x:21,y:-1,text:'QUARRY',scale:1.3,rot:0},{x:78,y:-4.2,text:'WHOOPS//',scale:1.3,rot:0},{x:148,y:-4.6,text:'GAUNTLET',scale:1.3,rot:0},{x:169,y:-0.4,text:'CLIMB',scale:1.3,rot:-0.5},{x:202,y:-4.2,text:'ABYSS',scale:1.4,rot:-0.35},{x:254,y:-1.5,text:'STEP UP',scale:1.2,rot:-0.48},{x:334,y:-6.5,text:'MEGA GAP',scale:1.5,rot:-0.52},{x:385,y:-7.8,text:'FIN',scale:1.6,rot:0}]
     },
-
     {
       name: '04 // FOUNDRY WORKS',
       verts: [
-        [-16, 12], [-12, 0], [30, 0],
-        [36, 2.2], [36, -6.5], [43, -6.5], [43, 1.2], [50, -0.5], [56, -0.5],
-        [60, -5.2], [78, -5.2], [90, 0.2], [104, 0.2],
-        [104, -6.5], [114, -6.5], [114, 1.5], [126, 1.5],
-        [136, -1.5], [144, 2.2], [144, -7.0], [153, -7.0], [153, 1.0], [162, -1.8], [198, -1.8],
-        [204, -5.8], [224, -5.8], [236, -0.5], [244, -0.5],
-        [254, 4.2], [260, 4.2], [278, -4.0], [288, -4.0],
-        [288, -10.5], [302, -10.5], [302, -2.5], [316, -6.0], [352, -6.0], [354, 10]
+        [-16,12],[-12,0],[30,0],[36,2.2],[36,-6.5],[43,-6.5],[43,1.2],[50,-0.5],[56,-0.5],
+        [60,-5.2],[78,-5.2],[90,0.2],[104,0.2],[104,-6.5],[114,-6.5],[114,1.5],[126,1.5],
+        [136,-1.5],[144,2.2],[144,-7],[153,-7],[153,1],[162,-1.8],[198,-1.8],
+        [204,-5.8],[224,-5.8],[236,-0.5],[244,-0.5],[254,4.2],[260,4.2],[278,-4],[288,-4],
+        [288,-10.5],[302,-10.5],[302,-2.5],[316,-6],[352,-6],[354,10]
       ],
-      hazards: [
-        { x0: 36.0,  x1: 43.0,  y: -6.5 },
-        { x0: 104.0, x1: 114.0, y: -6.5 },
-        { x0: 144.0, x1: 153.0, y: -7.0 },
-        { x0: 288.0, x1: 302.0, y: -10.5 }
-      ],
+      hazards: [{x0:36,x1:43,y:-6.5},{x0:104,x1:114,y:-6.5},{x0:144,x1:153,y:-7},{x0:288,x1:302,y:-10.5}],
       obstacles: [
-        { type: 'boost',  x: 12.0,  y:  0.05, w: 6.0,  h: 0.14, angle:  0.00,  thrust: 32 },
-        ...crateStack(21.5, 0.0, 3, 3),
-        { type: 'seesaw', x: 63.2,  y: -0.40, w: 8.6,  h: 0.40, maxAngle: 0.34 },
-        { type: 'seesaw', x: 72.8,  y: -0.15, w: 8.4,  h: 0.40, maxAngle: 0.34 },
-        { type: 'box',    x: 80.2,  y:  0.00, w: 5.6,  h: 0.45, angle:  0.00 },
-        { type: 'bounce', x: 101.5, y:  0.26, w: 2.8,  h: 0.16, angle:  0.00,  ix: 7.5, iy: 15.0 },
-        ...crateStack(119.5, 1.5, 3, 2),
-        { type: 'boost',  x: 131.0, y:  0.00, w: 7.0,  h: 0.14, angle: -0.291, thrust: 30 },
-        { type: 'pipe',   x: 172.5, y: -1.66, r: 0.52 },
-        { type: 'pipe',   x: 176.2, y: -1.60, r: 0.56 },
-        { type: 'boost',  x: 192.0, y: -1.73, w: 6.5,  h: 0.14, angle:  0.00,  thrust: 32 },
-        { type: 'seesaw', x: 205.5, y: -0.80, w: 9.0,  h: 0.40, maxAngle: 0.34 },
-        { type: 'box',    x: 215.5, y: -0.50, w: 7.0,  h: 0.45, angle:  0.00 },
-        { type: 'boost',  x: 269.0, y:  0.10, w: 12.0, h: 0.14, angle: -0.428, thrust: 28 },
-        { type: 'bounce', x: 285.5, y: -3.93, w: 3.0,  h: 0.16, angle:  0.00,  ix: 10.5, iy: 16.5 }
+        {type:'boost',x:12,y:0.05,w:6,h:0.14,angle:0,thrust:32}, ...crateStack(21.5,0,3,3),
+        {type:'seesaw',x:63.2,y:-0.4,w:8.6,h:0.4,maxAngle:0.34},{type:'seesaw',x:72.8,y:-0.15,w:8.4,h:0.4,maxAngle:0.34},
+        {type:'box',x:80.2,y:0,w:5.6,h:0.45,angle:0},{type:'bounce',x:101.5,y:0.26,w:2.8,h:0.16,angle:0,ix:7.5,iy:15},
+        ...crateStack(119.5,1.5,3,2), {type:'boost',x:131,y:0,w:7,h:0.14,angle:-0.291,thrust:30},
+        {type:'pipe',x:172.5,y:-1.66,r:0.52},{type:'pipe',x:176.2,y:-1.6,r:0.56},{type:'boost',x:192,y:-1.73,w:6.5,h:0.14,angle:0,thrust:32},
+        {type:'seesaw',x:205.5,y:-0.8,w:9,h:0.4,maxAngle:0.34},{type:'box',x:215.5,y:-0.5,w:7,h:0.45,angle:0},
+        {type:'boost',x:269,y:0.1,w:12,h:0.14,angle:-0.428,thrust:28},{type:'bounce',x:285.5,y:-3.93,w:3,h:0.16,angle:0,ix:10.5,iy:16.5}
       ],
-      checkpoints: [
-        { x: 3,   groundY:  0.0 },
-        { x: 52,  groundY: -0.5 },
-        { x: 94,  groundY:  0.2 },
-        { x: 165, groundY: -1.8 },
-        { x: 240, groundY: -0.5 },
-        { x: 282, groundY: -4.0 }
-      ],
-      finishX: 332,
-      finishY: -6.0,
-      tags: [
-        { x: 14,  y: -1.8, text: 'FOUNDRY',  scale: 1.4, rot:  0.0 },
-        { x: 68,  y: -7.0, text: 'SEESAW//', scale: 1.3, rot:  0.0 },
-        { x: 100, y: -1.8, text: 'LAUNCH',   scale: 1.2, rot:  0.0 },
-        { x: 185, y: -3.8, text: 'CRUSH',    scale: 1.4, rot:  0.0 },
-        { x: 268, y: -2.2, text: 'TURBO',    scale: 1.4, rot: -0.42 },
-        { x: 329, y: -7.8, text: 'FIN',      scale: 1.6, rot:  0.0 }
-      ]
+      checkpoints: [{x:3,groundY:0},{x:52,groundY:-0.5},{x:94,groundY:0.2},{x:165,groundY:-1.8},{x:240,groundY:-0.5},{x:282,groundY:-4}],
+      finishX: 332, finishY: -6.0,
+      tags: [{x:14,y:-1.8,text:'FOUNDRY',scale:1.4,rot:0},{x:68,y:-7,text:'SEESAW//',scale:1.3,rot:0},{x:100,y:-1.8,text:'LAUNCH',scale:1.2,rot:0},{x:185,y:-3.8,text:'CRUSH',scale:1.4,rot:0},{x:268,y:-2.2,text:'TURBO',scale:1.4,rot:-0.42},{x:329,y:-7.8,text:'FIN',scale:1.6,rot:0}]
     },
-
     {
       name: '05 // VERTICAL SHIFT',
       verts: [
-        [-16, 12], [-12, 0], [16, 0],
-        [16, -6.0], [20, -6.0], [20, 3.8], [32, 3.8],
-        [34, -2.5], [47, -2.5], [60, 4.5], [68, 4.5],
-        [80, -1.5], [96, -1.5], [103.5, 0.9], [105.5, -6.6], [116, -6.6], [128, -0.5], [134, -0.5],
-        [140, 1.5], [140, -7.0], [149, -7.0], [149, 0.5], [156, -2.0], [166, -2.0],
-        [170, -6.2], [190, -6.2], [202, -1.0], [218, -1.0],
-        [220, -4.5], [232, -4.5], [246, 2.5], [260, 2.5],
-        [282, -5.5], [292, -5.5], [300, -1.5], [306, 2.0], [306, -11.5],
-        [319, -11.5], [319, 0.5], [332, -4.5], [368, -4.5], [370, 10]
+        [-16,12],[-12,0],[16,0],[16,-6],[20,-6],[20,3.8],[32,3.8],[34,-2.5],[47,-2.5],[60,4.5],[68,4.5],
+        [80,-1.5],[96,-1.5],[103.5,0.9],[105.5,-6.6],[116,-6.6],[128,-0.5],[134,-0.5],
+        [140,1.5],[140,-7],[149,-7],[149,0.5],[156,-2],[166,-2],[170,-6.2],[190,-6.2],[202,-1],[218,-1],
+        [220,-4.5],[232,-4.5],[246,2.5],[260,2.5],[282,-5.5],[292,-5.5],[300,-1.5],[306,2],[306,-11.5],
+        [319,-11.5],[319,0.5],[332,-4.5],[368,-4.5],[370,10]
       ],
-      hazards: [
-        { x0: 16.0,  x1: 20.0,  y: -6.0 },
-        { x0: 140.0, x1: 149.0, y: -7.0 },
-        { x0: 306.0, x1: 319.0, y: -11.5 }
-      ],
+      hazards: [{x0:16,x1:20,y:-6},{x0:140,x1:149,y:-7},{x0:306,x1:319,y:-11.5}],
       obstacles: [
-        { type: 'bounce',  x: 13.5,  y:  0.08, w: 3.0,  h: 0.16, angle:  0.00,  ix: 5.5, iy: 16.5 },
-        { type: 'mover',   x: 37.5,  y:  1.10, w: 6.2,  h: 0.44, ampX: 0.0, ampY: 3.0, speed: 1.15, phase: 0.0 },
-        { type: 'mover',   x: 51.5,  y:  4.10, w: 6.8,  h: 0.44, ampX: 4.2, ampY: 0.0, speed: 1.25, phase: 1.2 },
-        { type: 'pipe',    x: 85.0,  y: -1.56, r: 0.48 },
-        { type: 'pipe',    x: 89.2,  y: -1.54, r: 0.52 },
-        { type: 'spinner', x: 109.2, y: -1.45, r: 2.65, blades: 4, speed: -0.95 },
-        { type: 'boost',   x: 137.0, y:  0.50, w: 6.5,  h: 0.14, angle:  0.322, thrust: 32 },
-        { type: 'mover',   x: 175.0, y: -1.80, w: 6.8,  h: 0.44, ampX: 4.5, ampY: 0.0, speed: 1.35, phase: 0.0 },
-        { type: 'mover',   x: 188.0, y: -1.30, w: 6.8,  h: 0.44, ampX:-4.5, ampY: 0.0, speed: 1.35, phase: 0.5 },
-        ...crateStack(207.5, -1.0, 3, 3),
-        { type: 'mover',   x: 225.0, y: -0.60, w: 6.5,  h: 0.44, ampX: 0.0, ampY: 3.1, speed: 1.20, phase: 0.8 },
-        { type: 'seesaw',  x: 236.5, y:  2.40, w: 8.4,  h: 0.40, maxAngle: 0.34 },
-        { type: 'boost',   x: 271.0, y: -1.50, w: 14.0, h: 0.14, angle: -0.349, thrust: 28 }
+        {type:'bounce',x:13.5,y:0.08,w:3,h:0.16,angle:0,ix:5.5,iy:16.5},
+        {type:'mover',x:37.5,y:1.1,w:6.2,h:0.44,ampX:0,ampY:3,speed:1.15,phase:0},{type:'mover',x:51.5,y:4.1,w:6.8,h:0.44,ampX:4.2,ampY:0,speed:1.25,phase:1.2},
+        {type:'pipe',x:85,y:-1.56,r:0.48},{type:'pipe',x:89.2,y:-1.54,r:0.52},
+        {type:'spinner',x:109.2,y:-1.45,r:2.65,blades:4,speed:-0.95},{type:'boost',x:137,y:0.5,w:6.5,h:0.14,angle:0.322,thrust:32},
+        {type:'mover',x:175,y:-1.8,w:6.8,h:0.44,ampX:4.5,ampY:0,speed:1.35,phase:0},{type:'mover',x:188,y:-1.3,w:6.8,h:0.44,ampX:-4.5,ampY:0,speed:1.35,phase:0.5},
+        ...crateStack(207.5,-1,3,3), {type:'mover',x:225,y:-0.6,w:6.5,h:0.44,ampX:0,ampY:3.1,speed:1.2,phase:0.8},
+        {type:'seesaw',x:236.5,y:2.4,w:8.4,h:0.4,maxAngle:0.34},{type:'boost',x:271,y:-1.5,w:14,h:0.14,angle:-0.349,thrust:28}
       ],
-      checkpoints: [
-        { x: 3,   groundY:  0.0 },
-        { x: 29,  groundY:  3.8 },
-        { x: 65,  groundY:  4.5 },
-        { x: 131, groundY: -0.5 },
-        { x: 161, groundY: -2.0 },
-        { x: 215, groundY: -1.0 },
-        { x: 257, groundY:  2.5 }
-      ],
-      finishX: 350,
-      finishY: -4.5,
-      tags: [
-        { x: 11,  y: -1.8, text: 'SPRING',   scale: 1.2, rot:  0.0 },
-        { x: 40,  y: -4.2, text: 'LIFT//',   scale: 1.3, rot:  0.0 },
-        { x: 110, y: -8.2, text: 'TURBINE',  scale: 1.3, rot:  0.0 },
-        { x: 180, y: -7.8, text: 'SLIDERS',  scale: 1.4, rot:  0.0 },
-        { x: 270, y: -3.5, text: 'DROP IN',  scale: 1.4, rot: -0.35 },
-        { x: 347, y: -6.3, text: 'FIN',      scale: 1.6, rot:  0.0 }
-      ]
+      checkpoints: [{x:3,groundY:0},{x:29,groundY:3.8},{x:65,groundY:4.5},{x:131,groundY:-0.5},{x:161,groundY:-2},{x:215,groundY:-1},{x:257,groundY:2.5}],
+      finishX: 350, finishY: -4.5,
+      tags: [{x:11,y:-1.8,text:'SPRING',scale:1.2,rot:0},{x:40,y:-4.2,text:'LIFT//',scale:1.3,rot:0},{x:110,y:-8.2,text:'TURBINE',scale:1.3,rot:0},{x:180,y:-7.8,text:'SLIDERS',scale:1.4,rot:0},{x:270,y:-3.5,text:'DROP IN',scale:1.4,rot:-0.35},{x:347,y:-6.3,text:'FIN',scale:1.6,rot:0}]
     },
-
     {
       name: '06 // NEON GAUNTLET',
       verts: [
-        [-16, 12], [-12, 0], [12, 0],
-        [18, 2.5], [18, -6.5], [26, -6.5], [26, 1.2], [36, -2.0], [42, -2.0],
-        [42, -7.0], [50, -7.0], [50, 1.0], [58, -1.0], [64, -1.0],
-        [68, -5.8], [86, -5.8], [98, -0.5], [104, -0.5],
-        [108, -5.5], [142, -5.5], [154, 0.5], [184, 0.5],
-        [184.3, 0.95], [188.5, 0.95], [188.8, 1.40], [193.0, 1.40], [193.3, 1.85], [197.5, 1.85], [197.8, 2.30], [202.0, 2.30],
-        [212, 6.8], [218, 6.8], [226, 0.0], [236, 0.0], [246, 4.2], [254, 4.2],
-        [268, -2.5], [284, -2.5], [290, 0.5], [295, 3.0], [295, -10.0],
-        [307, -10.0], [307, 1.5], [318, -3.5], [330, -3.5],
-        [348, -9.0], [356, -9.0], [368, -3.5], [374, 0.2], [374, -14.0],
-        [389, -14.0], [389, -1.5], [404, -6.5], [436, -6.5], [438, 10]
+        [-16,12],[-12,0],[12,0],[18,2.5],[18,-6.5],[26,-6.5],[26,1.2],[36,-2],[42,-2],[42,-7],[50,-7],[50,1],[58,-1],[64,-1],
+        [68,-5.8],[86,-5.8],[98,-0.5],[104,-0.5],[108,-5.5],[142,-5.5],[154,0.5],[184,0.5],
+        [184.3,0.95],[188.5,0.95],[188.8,1.4],[193,1.4],[193.3,1.85],[197.5,1.85],[197.8,2.3],[202,2.3],[212,6.8],[218,6.8],
+        [226,0],[236,0],[246,4.2],[254,4.2],[268,-2.5],[284,-2.5],[290,0.5],[295,3],[295,-10],[307,-10],[307,1.5],[318,-3.5],[330,-3.5],
+        [348,-9],[356,-9],[368,-3.5],[374,0.2],[374,-14],[389,-14],[389,-1.5],[404,-6.5],[436,-6.5],[438,10]
       ],
-      hazards: [
-        { x0: 18.0,  x1: 26.0,  y: -6.5 },
-        { x0: 42.0,  x1: 50.0,  y: -7.0 },
-        { x0: 295.0, x1: 307.0, y: -10.0 },
-        { x0: 374.0, x1: 389.0, y: -14.0 }
-      ],
+      hazards: [{x0:18,x1:26,y:-6.5},{x0:42,x1:50,y:-7},{x0:295,x1:307,y:-10},{x0:374,x1:389,y:-14}],
       obstacles: [
-        { type: 'boost',   x: 9.0,   y:  0.05, w: 6.0,  h: 0.14, angle:  0.00,  thrust: 34 },
-        { type: 'bounce',  x: 39.5,  y: -1.93, w: 2.8,  h: 0.16, angle:  0.00,  ix: 7.5, iy: 15.5 },
-        { type: 'seesaw',  x: 71.5,  y: -0.90, w: 8.8,  h: 0.40, maxAngle: 0.34 },
-        { type: 'box',     x: 82.0,  y: -0.70, w: 7.4,  h: 0.45, angle:  0.00 },
-        ...crateStack(82.0, -0.45, 3, 2),
-        { type: 'mover',   x: 112.0, y: -0.40, w: 6.2,  h: 0.44, ampX:  3.2, ampY: 0, speed: 1.30, phase: 0.0 },
-        { type: 'spinner', x: 124.5, y: -0.80, r: 2.40, blades: 4, speed: -1.05 },
-        { type: 'mover',   x: 138.0, y:  0.10, w: 6.4,  h: 0.44, ampX: -3.4, ampY: 0, speed: 1.30, phase: 1.5 },
-        { type: 'pipe',    x: 166.5, y:  0.64, r: 0.52 },
-        { type: 'pipe',    x: 170.5, y:  0.70, r: 0.56 },
-        { type: 'pipe',    x: 174.5, y:  0.64, r: 0.50 },
-        { type: 'pipe',    x: 178.5, y:  0.72, r: 0.58 },
-        { type: 'bounce',  x: 233.5, y:  0.08, w: 3.0,  h: 0.16, angle:  0.00,  ix: 7.0, iy: 16.5 },
-        { type: 'boost',   x: 276.0, y: -2.43, w: 10.0, h: 0.14, angle:  0.00,  thrust: 34 },
-        ...crateStack(326.0, -3.5, 3, 3),
-        { type: 'boost',   x: 339.0, y: -6.25, w: 13.0, h: 0.14, angle: -0.297, thrust: 34 }
+        {type:'boost',x:9,y:0.05,w:6,h:0.14,angle:0,thrust:34},{type:'bounce',x:39.5,y:-1.93,w:2.8,h:0.16,angle:0,ix:7.5,iy:15.5},
+        {type:'seesaw',x:71.5,y:-0.9,w:8.8,h:0.4,maxAngle:0.34},{type:'box',x:82,y:-0.7,w:7.4,h:0.45,angle:0},...crateStack(82,-0.45,3,2),
+        {type:'mover',x:112,y:-0.4,w:6.2,h:0.44,ampX:3.2,ampY:0,speed:1.3,phase:0},{type:'spinner',x:124.5,y:-0.8,r:2.4,blades:4,speed:-1.05},{type:'mover',x:138,y:0.1,w:6.4,h:0.44,ampX:-3.4,ampY:0,speed:1.3,phase:1.5},
+        {type:'pipe',x:166.5,y:0.64,r:0.52},{type:'pipe',x:170.5,y:0.70,r:0.56},{type:'pipe',x:174.5,y:0.64,r:0.50},{type:'pipe',x:178.5,y:0.72,r:0.58},
+        {type:'bounce',x:233.5,y:0.08,w:3,h:0.16,angle:0,ix:7,iy:16.5},{type:'boost',x:276,y:-2.43,w:10,h:0.14,angle:0,thrust:34},
+        ...crateStack(326,-3.5,3,3),{type:'boost',x:339,y:-6.25,w:13,h:0.14,angle:-0.297,thrust:34}
       ],
-      checkpoints: [
-        { x: 3,   groundY:  0.0 },
-        { x: 61,  groundY: -1.0 },
-        { x: 101, groundY: -0.5 },
-        { x: 157, groundY:  0.5 },
-        { x: 215, groundY:  6.8 },
-        { x: 250, groundY:  4.2 },
-        { x: 322, groundY: -3.5 }
-      ],
-      finishX: 420,
-      finishY: -6.5,
-      tags: [
-        { x: 10,  y: -1.8, text: 'GAUNTLET', scale: 1.3, rot:  0.0 },
-        { x: 75,  y: -7.5, text: 'SMASH//',  scale: 1.3, rot:  0.0 },
-        { x: 124, y: -7.2, text: 'GEARS',    scale: 1.4, rot:  0.0 },
-        { x: 205, y:  2.2, text: 'STEP UP',  scale: 1.2, rot: -0.42 },
-        { x: 280, y: -4.4, text: 'OVERDRIVE',scale: 1.3, rot:  0.0 },
-        { x: 360, y: -9.5, text: 'SEND IT',  scale: 1.6, rot: -0.40 },
-        { x: 417, y: -8.3, text: 'FIN',      scale: 1.6, rot:  0.0 }
-      ]
+      checkpoints: [{x:3,groundY:0},{x:61,groundY:-1},{x:101,groundY:-0.5},{x:157,groundY:0.5},{x:215,groundY:6.8},{x:250,groundY:4.2},{x:322,groundY:-3.5}],
+      finishX: 420, finishY: -6.5,
+      tags: [{x:10,y:-1.8,text:'GAUNTLET',scale:1.3,rot:0},{x:75,y:-7.5,text:'SMASH//',scale:1.3,rot:0},{x:124,y:-7.2,text:'GEARS',scale:1.4,rot:0},{x:205,y:2.2,text:'STEP UP',scale:1.2,rot:-0.42},{x:280,y:-4.4,text:'OVERDRIVE',scale:1.3,rot:0},{x:360,y:-9.5,text:'SEND IT',scale:1.6,rot:-0.4},{x:417,y:-8.3,text:'FIN',scale:1.6,rot:0}]
     },
-
     {
       name: '07 // BREAKAWAY MILL',
       verts: [
-        [-16, 12], [-12, 0], [16, 0],
-        // Climb-out trench 1 under crumble bridges (32->42 climbs 25.6 deg)
-        [20, -4.8], [32, -4.8], [42, 0.0], [50, 0.0],
-        [64, -3.5], [82, -3.5], [90, -1.5], [104, -1.5],
-        [110, 1.8], [110, -7.0], [119, -7.0], [119, 0.8], [128, -2.0], [134, -2.0],
-        // Climb-out trench 2 (154->166 climbs 24.6 deg)
-        [138, -6.5], [154, -6.5], [166, -1.0], [218, -1.0],
-        [226, 2.5], [232, 2.5], [250, -4.5], [272, -4.5],
-        [272, -10.5], [284, -10.5], [284, -2.5], [296, -5.5], [332, -5.5], [334, 10]
+        [-16,12],[-12,0],[16,0],[20,-4.8],[32,-4.8],[42,0],[50,0],[64,-3.5],[82,-3.5],[90,-1.5],[104,-1.5],
+        [110,1.8],[110,-7],[119,-7],[119,0.8],[128,-2],[134,-2],[138,-6.5],[154,-6.5],[166,-1],[218,-1],
+        [226,2.5],[232,2.5],[250,-4.5],[272,-4.5],[272,-10.5],[284,-10.5],[284,-2.5],[296,-5.5],[332,-5.5],[334,10]
       ],
-      hazards: [
-        { x0: 110.0, x1: 119.0, y: -7.0 },
-        { x0: 272.0, x1: 284.0, y: -10.5 }
-      ],
+      hazards: [{x0:110,x1:119,y:-7},{x0:272,x1:284,y:-10.5}],
       obstacles: [
-        { type: 'crumble',  x: 19.0,  y: -0.22, w: 5.4, h: 0.44 },
-        { type: 'crumble',  x: 25.0,  y: -0.22, w: 5.4, h: 0.44 },
-        { type: 'crumble',  x: 31.0,  y: -0.22, w: 5.4, h: 0.44 },
-        { type: 'drum',     x: 56.0,  y: -0.80, r: 0.50 },
-        { type: 'drum',     x: 61.0,  y: -2.10, r: 0.55 },
-        { type: 'drum',     x: 68.0,  y: -2.90, r: 0.48 },
-        { type: 'drum',     x: 74.0,  y: -2.90, r: 0.55 },
-        { type: 'drum',     x: 79.0,  y: -2.90, r: 0.50 },
-        { type: 'boost',    x: 99.5,  y: -1.43, w: 5.5, h: 0.14, angle: 0.0, thrust: 32 },
-        { type: 'seesaw',   x: 141.5, y: -1.80, w: 9.0, h: 0.40, maxAngle: 0.34 },
-        { type: 'crumble',  x: 150.5, y: -1.50, w: 6.2, h: 0.44 },
-        { type: 'pendulum', x: 186.0, y:  4.60, len: 4.4, r: 0.72, amp: 0.95, speed: 2.0, phase: 0.0 },
-        { type: 'pendulum', x: 202.0, y:  4.60, len: 4.4, r: 0.72, amp: 0.95, speed: 2.0, phase: 1.6 },
-        { type: 'boost',    x: 255.0, y: -4.43, w: 8.0, h: 0.14, angle: 0.0, thrust: 32 },
-        ...crateStack(264.0, -4.5, 3, 3),
-        { type: 'bounce',   x: 270.0, y: -4.42, w: 3.0, h: 0.16, angle: 0.0, ix: 9.5, iy: 15.5 }
+        {type:'crumble',x:19,y:-0.22,w:5.4,h:0.44},{type:'crumble',x:25,y:-0.22,w:5.4,h:0.44},{type:'crumble',x:31,y:-0.22,w:5.4,h:0.44},
+        {type:'drum',x:56,y:-0.8,r:0.5},{type:'drum',x:61,y:-2.1,r:0.55},{type:'drum',x:68,y:-2.9,r:0.48},{type:'drum',x:74,y:-2.9,r:0.55},{type:'drum',x:79,y:-2.9,r:0.5},
+        {type:'boost',x:99.5,y:-1.43,w:5.5,h:0.14,angle:0,thrust:32},{type:'seesaw',x:141.5,y:-1.8,w:9,h:0.4,maxAngle:0.34},{type:'crumble',x:150.5,y:-1.5,w:6.2,h:0.44},
+        {type:'pendulum',x:186,y:4.6,len:4.4,r:0.72,amp:0.95,speed:2,phase:0},{type:'pendulum',x:202,y:4.6,len:4.4,r:0.72,amp:0.95,speed:2,phase:1.6},
+        {type:'boost',x:255,y:-4.43,w:8,h:0.14,angle:0,thrust:32},...crateStack(264,-4.5,3,3),{type:'bounce',x:270,y:-4.42,w:3,h:0.16,angle:0,ix:9.5,iy:15.5}
       ],
-      checkpoints: [
-        { x: 3,   groundY:  0.0 },
-        { x: 46,  groundY:  0.0 },
-        { x: 93,  groundY: -1.5 },
-        { x: 131, groundY: -2.0 },
-        { x: 170, groundY: -1.0 },
-        { x: 229, groundY:  2.5 }
-      ],
-      finishX: 315,
-      finishY: -5.5,
-      tags: [
-        { x: 24,  y: -6.5, text: 'FRACTURE', scale: 1.3, rot:  0.0 },
-        { x: 72,  y: -5.4, text: 'BARRELS',  scale: 1.3, rot:  0.0 },
-        { x: 194, y: -3.2, text: 'SWING//',  scale: 1.4, rot:  0.0 },
-        { x: 259, y: -6.6, text: 'SMASH',    scale: 1.3, rot:  0.0 },
-        { x: 312, y: -7.3, text: 'FIN',      scale: 1.6, rot:  0.0 }
-      ]
+      checkpoints: [{x:3,groundY:0},{x:46,groundY:0},{x:93,groundY:-1.5},{x:131,groundY:-2},{x:170,groundY:-1},{x:229,groundY:2.5}],
+      finishX: 315, finishY: -5.5,
+      tags: [{x:24,y:-6.5,text:'FRACTURE',scale:1.3,rot:0},{x:72,y:-5.4,text:'BARRELS',scale:1.3,rot:0},{x:194,y:-3.2,text:'SWING//',scale:1.4,rot:0},{x:259,y:-6.6,text:'SMASH',scale:1.3,rot:0},{x:312,y:-7.3,text:'FIN',scale:1.6,rot:0}]
     },
-
     {
       name: '08 // CLOCKWORK CORE',
       verts: [
-        [-16, 12], [-12, 0], [14, 0],
-        // Sump valley under dual turbines (46->58 climbs 26.5 deg)
-        [17.5, 1.4], [19.5, -6.0], [46, -6.0], [58, 0.0], [104, 0.0],
-        [110, 2.6], [110, -7.0], [119, -7.0], [119, 1.5], [128, -1.0], [136, -1.0],
-        // Elevator shaft escape ramp (166->180 climbs 26.5 deg)
-        [138, -5.0], [166, -5.0], [180, 2.0], [188, 2.0],
-        [196, -1.0], [216, -1.0],
-        [216.3, -0.56], [220.5, -0.56], [220.8, -0.12], [225.0, -0.12], [225.3, 0.32], [229.5, 0.32], [229.8, 0.76], [234.0, 0.76], [234.3, 1.20], [239.0, 1.20],
-        [248, 5.8], [254, 5.8], [268, 0.0],
-        // Escape trench under crumble+seesaw (294->304 climbs 26.5 deg)
-        [274, -4.5], [294, -4.5], [304, 0.5], [310, 0.5],
-        [326, -5.5], [334, -5.5], [342, -2.0], [347, 1.2], [347, -11.5],
-        [359, -11.5], [359, -0.2], [372, -5.0], [404, -5.0], [406, 10]
+        [-16,12],[-12,0],[14,0],[17.5,1.4],[19.5,-6],[46,-6],[58,0],[104,0],[110,2.6],[110,-7],[119,-7],[119,1.5],[128,-1],[136,-1],
+        [138,-5],[166,-5],[180,2],[188,2],[196,-1],[216,-1],
+        [216.3,-0.56],[220.5,-0.56],[220.8,-0.12],[225,-0.12],[225.3,0.32],[229.5,0.32],[229.8,0.76],[234,0.76],[234.3,1.2],[239,1.2],[248,5.8],[254,5.8],
+        [268,0],[274,-4.5],[294,-4.5],[304,0.5],[310,0.5],[326,-5.5],[334,-5.5],[342,-2],[347,1.2],[347,-11.5],[359,-11.5],[359,-0.2],[372,-5],[404,-5],[406,10]
       ],
-      hazards: [
-        { x0: 110.0, x1: 119.0, y: -7.0 },
-        { x0: 347.0, x1: 359.0, y: -11.5 }
-      ],
+      hazards: [{x0:110,x1:119,y:-7},{x0:347,x1:359,y:-11.5}],
       obstacles: [
-        { type: 'spinner',  x: 24.5,  y: -0.80, r: 2.60, blades: 4, speed: -0.95 },
-        { type: 'spinner',  x: 32.5,  y: -0.40, r: 2.60, blades: 4, speed: -1.10 },
-        { type: 'box',      x: 40.5,  y:  0.00, w: 6.5, h: 0.45, angle: 0.0 },
-        { type: 'pendulum', x: 75.0,  y:  5.40, len: 4.2, r: 0.68, amp: 0.90, speed: 2.1, phase: 0.0 },
-        { type: 'pendulum', x: 84.0,  y:  5.40, len: 4.2, r: 0.68, amp: 0.90, speed: 2.1, phase: 1.0 },
-        { type: 'pendulum', x: 93.0,  y:  5.40, len: 4.2, r: 0.68, amp: 0.90, speed: 2.1, phase: 2.0 },
-        { type: 'boost',    x: 100.0, y:  0.06, w: 5.0, h: 0.14, angle: 0.0, thrust: 32 },
-        { type: 'mover',    x: 143.0, y: -1.40, w: 6.2, h: 0.44, ampX: 0.0, ampY: 3.0, speed: 1.10, phase: 0.0 },
-        { type: 'mover',    x: 152.5, y: -0.60, w: 6.2, h: 0.44, ampX: 0.0, ampY: 3.0, speed: 1.10, phase: 1.5 },
-        { type: 'mover',    x: 162.5, y:  2.00, w: 6.4, h: 0.44, ampX: 3.8, ampY: 0.0, speed: 1.25, phase: 0.5 },
-        { type: 'pipe',     x: 200.5, y: -1.14, r: 0.48 },
-        { type: 'pipe',     x: 204.2, y: -1.10, r: 0.52 },
-        { type: 'pipe',     x: 208.0, y: -1.08, r: 0.54 },
-        { type: 'pipe',     x: 211.8, y: -1.06, r: 0.56 },
-        { type: 'crumble',  x: 276.0, y: -0.20, w: 5.6, h: 0.44 },
-        { type: 'crumble',  x: 283.0, y: -0.20, w: 5.6, h: 0.44 },
-        { type: 'seesaw',   x: 291.5, y:  0.10, w: 8.4, h: 0.40, maxAngle: 0.34 },
-        { type: 'boost',    x: 318.0, y: -2.50, w: 12.0, h: 0.14, angle: -0.358, thrust: 32 }
+        {type:'spinner',x:24.5,y:-0.8,r:2.6,blades:4,speed:-0.95},{type:'spinner',x:32.5,y:-0.4,r:2.6,blades:4,speed:-1.1},{type:'box',x:40.5,y:0,w:6.5,h:0.45,angle:0},
+        {type:'pendulum',x:75,y:5.4,len:4.2,r:0.68,amp:0.9,speed:2.1,phase:0},{type:'pendulum',x:84,y:5.4,len:4.2,r:0.68,amp:0.9,speed:2.1,phase:1},{type:'pendulum',x:93,y:5.4,len:4.2,r:0.68,amp:0.9,speed:2.1,phase:2},
+        {type:'boost',x:100,y:0.06,w:5,h:0.14,angle:0,thrust:32},
+        {type:'mover',x:143,y:-1.4,w:6.2,h:0.44,ampX:0,ampY:3,speed:1.1,phase:0},{type:'mover',x:152.5,y:-0.6,w:6.2,h:0.44,ampX:0,ampY:3,speed:1.1,phase:1.5},{type:'mover',x:162.5,y:2,w:6.4,h:0.44,ampX:3.8,ampY:0,speed:1.25,phase:0.5},
+        {type:'pipe',x:200.5,y:-1.14,r:0.48},{type:'pipe',x:204.2,y:-1.10,r:0.52},{type:'pipe',x:208,y:-1.08,r:0.54},{type:'pipe',x:211.8,y:-1.06,r:0.56},
+        {type:'crumble',x:276,y:-0.2,w:5.6,h:0.44},{type:'crumble',x:283,y:-0.2,w:5.6,h:0.44},{type:'seesaw',x:291.5,y:0.1,w:8.4,h:0.4,maxAngle:0.34},
+        {type:'boost',x:318,y:-2.5,w:12,h:0.14,angle:-0.358,thrust:32}
       ],
-      checkpoints: [
-        { x: 3,   groundY:  0.0 },
-        { x: 62,  groundY:  0.0 },
-        { x: 132, groundY: -1.0 },
-        { x: 184, groundY:  2.0 },
-        { x: 251, groundY:  5.8 },
-        { x: 307, groundY:  0.5 }
-      ],
-      finishX: 388,
-      finishY: -5.0,
-      tags: [
-        { x: 29,  y: -7.8, text: 'CLOCKWORK', scale: 1.4, rot:  0.0 },
-        { x: 83,  y: -2.2, text: 'TIMING',    scale: 1.3, rot:  0.0 },
-        { x: 152, y: -6.8, text: 'ELEVATE',   scale: 1.3, rot:  0.0 },
-        { x: 242, y:  1.4, text: 'STAIRS',    scale: 1.2, rot: -0.46 },
-        { x: 385, y: -6.8, text: 'FIN',       scale: 1.6, rot:  0.0 }
-      ]
+      checkpoints: [{x:3,groundY:0},{x:62,groundY:0},{x:132,groundY:-1},{x:184,groundY:2},{x:251,groundY:5.8},{x:307,groundY:0.5}],
+      finishX: 388, finishY: -5.0,
+      tags: [{x:29,y:-7.8,text:'CLOCKWORK',scale:1.4,rot:0},{x:83,y:-2.2,text:'TIMING',scale:1.3,rot:0},{x:152,y:-6.8,text:'ELEVATE',scale:1.3,rot:0},{x:242,y:1.4,text:'STAIRS',scale:1.2,rot:-0.46},{x:385,y:-6.8,text:'FIN',scale:1.6,rot:0}]
     },
-
     {
       name: '09 // PIPELINE OVERPASS',
       verts: [
-        [-16, 12], [-12, 0], [16, 0],
-        // Lower buried-pipe escape route beneath upper overpass (52->64 climbs 21.8 deg)
-        [18, -4.8], [52, -4.8], [64, 0.0], [72, 0.0],
-        [82, 3.6], [88, 3.6], [100, -3.0], [108, -3.0], [118, 2.2], [124, 2.2], [134, -2.5], [147, -2.5],
-        [147, -8.0], [155, -8.0], [155, 1.5], [164, 1.5], [164, -8.0], [173, -8.0], [173, 5.2], [184, 5.2],
-        [202, -3.5], [248, -3.5], [262, 3.5], [270, 3.5],
-        // Valley under sliding overpass (306->316 climbs 23.3 deg)
-        [272, -2.5], [306, -2.5], [316, 1.8], [324, 1.8],
-        [340, -4.5], [350, -4.5], [358, -1.0], [364, 2.0], [364, -12.0],
-        [377, -12.0], [377, -0.5], [390, -5.0], [420, -5.0], [422, 10]
+        [-16,12],[-12,0],[16,0],[18,-4.8],[52,-4.8],[64,0],[72,0],[82,3.6],[88,3.6],[100,-3],[108,-3],[118,2.2],[124,2.2],[134,-2.5],[147,-2.5],
+        [147,-8],[155,-8],[155,1.5],[164,1.5],[164,-8],[173,-8],[173,5.2],[184,5.2],[202,-3.5],[248,-3.5],[262,3.5],[270,3.5],
+        [272,-2.5],[306,-2.5],[316,1.8],[324,1.8],[340,-4.5],[350,-4.5],[358,-1],[364,2],[364,-12],[377,-12],[377,-0.5],[390,-5],[420,-5],[422,10]
       ],
-      hazards: [
-        { x0: 147.0, x1: 155.0, y: -8.0 },
-        { x0: 164.0, x1: 173.0, y: -8.0 },
-        { x0: 364.0, x1: 377.0, y: -12.0 }
-      ],
+      hazards: [{x0:147,x1:155,y:-8},{x0:164,x1:173,y:-8},{x0:364,x1:377,y:-12}],
       obstacles: [
-        { type: 'seesaw', x: 21.0,  y: -0.10, w: 8.4, h: 0.40, maxAngle: 0.34 },
-        { type: 'box',    x: 31.0,  y:  0.00, w: 9.0, h: 0.45, angle: 0.0 },
-        { type: 'boost',  x: 31.0,  y:  0.26, w: 6.0, h: 0.12, angle: 0.0, thrust: 30 },
-        { type: 'crumble',x: 40.0,  y:  0.00, w: 6.0, h: 0.44 },
-        { type: 'box',    x: 48.0,  y:  0.00, w: 7.0, h: 0.45, angle: 0.0 },
-        { type: 'pipe',   x: 28.0,  y: -4.96, r: 0.50 },
-        { type: 'pipe',   x: 36.0,  y: -4.94, r: 0.52 },
-        { type: 'pipe',   x: 44.0,  y: -4.94, r: 0.52 },
-        { type: 'boost',  x: 94.0,  y:  0.30, w: 9.0, h: 0.14, angle: -0.503, thrust: 28 },
-        ...crateStack(120.0, 2.2, 3, 2),
-        { type: 'bounce', x: 144.5, y: -2.42, w: 2.8, h: 0.16, angle: 0.0, ix: 7.0, iy: 16.8 },
-        { type: 'bounce', x: 161.5, y:  1.58, w: 2.8, h: 0.16, angle: 0.0, ix: 7.5, iy: 16.8 },
-        { type: 'drum',   x: 220.0, y: -2.95, r: 0.52 },
-        { type: 'pipe',   x: 224.5, y: -3.66, r: 0.50 },
-        { type: 'drum',   x: 229.0, y: -2.95, r: 0.54 },
-        { type: 'pipe',   x: 234.0, y: -3.64, r: 0.52 },
-        { type: 'drum',   x: 239.0, y: -2.95, r: 0.52 },
-        { type: 'pipe',   x: 243.5, y: -3.62, r: 0.56 },
-        { type: 'mover',  x: 280.0, y:  2.80, w: 6.4, h: 0.44, ampX:  3.5, ampY: 0.0, speed: 1.25, phase: 0.0 },
-        { type: 'mover',  x: 294.0, y:  2.40, w: 6.4, h: 0.44, ampX: -3.5, ampY: 0.0, speed: 1.25, phase: 1.2 },
-        { type: 'seesaw', x: 306.0, y:  2.10, w: 8.4, h: 0.40, maxAngle: 0.34 },
-        { type: 'boost',  x: 345.0, y: -4.43, w: 8.0, h: 0.14, angle: 0.0, thrust: 34 }
+        {type:'seesaw',x:21,y:-0.1,w:8.4,h:0.4,maxAngle:0.34},{type:'box',x:31,y:0,w:9,h:0.45,angle:0},{type:'boost',x:31,y:0.26,w:6,h:0.12,angle:0,thrust:30},
+        {type:'crumble',x:40,y:0,w:6,h:0.44},{type:'box',x:48,y:0,w:7,h:0.45,angle:0},
+        {type:'pipe',x:28,y:-4.96,r:0.5},{type:'pipe',x:36,y:-4.94,r:0.52},{type:'pipe',x:44,y:-4.94,r:0.52},
+        {type:'boost',x:94,y:0.3,w:9,h:0.14,angle:-0.503,thrust:28},...crateStack(120,2.2,3,2),
+        {type:'bounce',x:144.5,y:-2.42,w:2.8,h:0.16,angle:0,ix:7,iy:16.8},{type:'bounce',x:161.5,y:1.58,w:2.8,h:0.16,angle:0,ix:7.5,iy:16.8},
+        {type:'drum',x:220,y:-2.95,r:0.52},{type:'pipe',x:224.5,y:-3.66,r:0.5},{type:'drum',x:229,y:-2.95,r:0.54},
+        {type:'pipe',x:234,y:-3.64,r:0.52},{type:'drum',x:239,y:-2.95,r:0.52},{type:'pipe',x:243.5,y:-3.62,r:0.56},
+        {type:'mover',x:280,y:2.8,w:6.4,h:0.44,ampX:3.5,ampY:0,speed:1.25,phase:0},{type:'mover',x:294,y:2.4,w:6.4,h:0.44,ampX:-3.5,ampY:0,speed:1.25,phase:1.2},
+        {type:'seesaw',x:306,y:2.1,w:8.4,h:0.4,maxAngle:0.34},{type:'boost',x:345,y:-4.43,w:8,h:0.14,angle:0,thrust:34}
       ],
-      checkpoints: [
-        { x: 3,   groundY:  0.0 },
-        { x: 68,  groundY:  0.0 },
-        { x: 138, groundY: -2.5 },
-        { x: 180, groundY:  5.2 },
-        { x: 266, groundY:  3.5 },
-        { x: 320, groundY:  1.8 }
-      ],
-      finishX: 404,
-      finishY: -5.0,
-      tags: [
-        { x: 35,  y: -6.8, text: 'OVERPASS', scale: 1.4, rot:  0.0 },
-        { x: 103, y: -5.2, text: 'ROLLERS',  scale: 1.3, rot:  0.0 },
-        { x: 158, y: -1.2, text: 'BOUNCE',   scale: 1.2, rot:  0.0 },
-        { x: 232, y: -5.6, text: 'DRUM YARD',scale: 1.3, rot:  0.0 },
-        { x: 401, y: -6.8, text: 'FIN',      scale: 1.6, rot:  0.0 }
-      ]
+      checkpoints: [{x:3,groundY:0},{x:68,groundY:0},{x:138,groundY:-2.5},{x:180,groundY:5.2},{x:266,groundY:3.5},{x:320,groundY:1.8}],
+      finishX: 404, finishY: -5.0,
+      tags: [{x:35,y:-6.8,text:'OVERPASS',scale:1.4,rot:0},{x:103,y:-5.2,text:'ROLLERS',scale:1.3,rot:0},{x:158,y:-1.2,text:'BOUNCE',scale:1.2,rot:0},{x:232,y:-5.6,text:'DRUM YARD',scale:1.3,rot:0},{x:401,y:-6.8,text:'FIN',scale:1.6,rot:0}]
     },
-
     {
       name: '10 // IRON PENDULUM',
       verts: [
-        [-16, 12], [-12, 0], [60, 0],
-        // Climb-out trench 1 (84->96 climbs 24.6 deg)
-        [64, -5.5], [84, -5.5], [96, 0.0], [104, 0.0],
-        [116, 5.2], [124, 5.2], [124, -6.5], [132, -6.5], [132, 3.8], [142, 0.0], [148, 0.0],
-        // Escape ramp 2 (164->178 climbs 26.5 deg)
-        [150, -4.5], [164, -4.5], [178, 2.5], [186, 2.5],
-        [202, -3.0], [238, -3.0], [245, 0.8], [245, -8.5], [255, -8.5], [255, -0.5], [266, -3.0], [278, -3.0],
-        [278.3, -2.56], [282.5, -2.56], [282.8, -2.12], [287.0, -2.12], [287.3, -1.68], [291.5, -1.68], [291.8, -1.24], [296.0, -1.24],
-        [306, 3.8], [312, 3.8], [330, -4.5], [358, -4.5], [365, -0.5], [365, -12.5],
-        [378, -12.5], [378, -2.0], [390, -5.5], [420, -5.5], [422, 10]
+        [-16,12],[-12,0],[60,0],[64,-5.5],[84,-5.5],[96,0],[104,0],[116,5.2],[124,5.2],[124,-6.5],[132,-6.5],[132,3.8],[142,0],[148,0],
+        [150,-4.5],[164,-4.5],[178,2.5],[186,2.5],[202,-3],[238,-3],[245,0.8],[245,-8.5],[255,-8.5],[255,-0.5],[266,-3],[278,-3],
+        [278.3,-2.56],[282.5,-2.56],[282.8,-2.12],[287,-2.12],[287.3,-1.68],[291.5,-1.68],[291.8,-1.24],[296,-1.24],[306,3.8],[312,3.8],
+        [330,-4.5],[358,-4.5],[365,-0.5],[365,-12.5],[378,-12.5],[378,-2],[390,-5.5],[420,-5.5],[422,10]
       ],
-      hazards: [
-        { x0: 124.0, x1: 132.0, y: -6.5 },
-        { x0: 245.0, x1: 255.0, y: -8.5 },
-        { x0: 365.0, x1: 378.0, y: -12.5 }
-      ],
+      hazards: [{x0:124,x1:132,y:-6.5},{x0:245,x1:255,y:-8.5},{x0:365,x1:378,y:-12.5}],
       obstacles: [
-        { type: 'pendulum', x: 24.0,  y:  5.40, len: 4.2, r: 0.72, amp: 0.95, speed: 2.2, phase: 0.0 },
-        { type: 'pipe',     x: 29.5,  y: -0.14, r: 0.48 },
-        { type: 'pendulum', x: 35.0,  y:  5.40, len: 4.2, r: 0.72, amp: 0.95, speed: 2.2, phase: 1.3 },
-        { type: 'pipe',     x: 40.5,  y: -0.14, r: 0.48 },
-        { type: 'pendulum', x: 46.0,  y:  5.40, len: 4.2, r: 0.72, amp: 0.95, speed: 2.2, phase: 2.6 },
-        { type: 'seesaw',   x: 68.0,  y: -0.20, w: 9.0, h: 0.40, maxAngle: 0.34 },
-        { type: 'box',      x: 76.5,  y: -0.35, w: 6.0, h: 0.45, angle: 0.0 },
-        { type: 'bounce',   x: 78.0,  y: -0.05, w: 2.6, h: 0.16, angle: 0.0, ix: 8.5, iy: 15.0 },
-        { type: 'mover',    x: 156.0, y: -0.60, w: 6.2, h: 0.44, ampX: 0.0, ampY: 3.2, speed: 1.15, phase: 0.0 },
-        { type: 'mover',    x: 167.0, y:  2.40, w: 6.4, h: 0.44, ampX: 4.2, ampY: 0.0, speed: 1.25, phase: 1.0 },
-        { type: 'boost',    x: 194.0, y: -0.25, w: 10.0,h: 0.14, angle: -0.331, thrust: 30 },
-        { type: 'boost',    x: 210.0, y: -2.93, w: 6.0, h: 0.14, angle: 0.0, thrust: 32 },
-        ...crateStack(218.0, -3.0, 3, 3),
-        ...crateStack(229.0, -3.0, 3, 3),
-        { type: 'pendulum', x: 342.0, y:  1.00, len: 4.3, r: 0.72, amp: 0.90, speed: 2.1, phase: 0.4 },
-        { type: 'boost',    x: 351.0, y: -4.43, w: 8.0, h: 0.14, angle: 0.0, thrust: 34 }
+        {type:'pendulum',x:24,y:5.4,len:4.2,r:0.72,amp:0.95,speed:2.2,phase:0},{type:'pipe',x:29.5,y:-0.14,r:0.48},
+        {type:'pendulum',x:35,y:5.4,len:4.2,r:0.72,amp:0.95,speed:2.2,phase:1.3},{type:'pipe',x:40.5,y:-0.14,r:0.48},{type:'pendulum',x:46,y:5.4,len:4.2,r:0.72,amp:0.95,speed:2.2,phase:2.6},
+        {type:'seesaw',x:68,y:-0.2,w:9,h:0.4,maxAngle:0.34},{type:'box',x:76.5,y:-0.35,w:6,h:0.45,angle:0},{type:'bounce',x:78,y:-0.05,w:2.6,h:0.16,angle:0,ix:8.5,iy:15},
+        {type:'mover',x:156,y:-0.6,w:6.2,h:0.44,ampX:0,ampY:3.2,speed:1.15,phase:0},{type:'mover',x:167,y:2.4,w:6.4,h:0.44,ampX:4.2,ampY:0,speed:1.25,phase:1},
+        {type:'boost',x:194,y:-0.25,w:10,h:0.14,angle:-0.331,thrust:30},{type:'boost',x:210,y:-2.93,w:6,h:0.14,angle:0,thrust:32},
+        ...crateStack(218,-3,3,3),...crateStack(229,-3,3,3),
+        {type:'pendulum',x:342,y:1,len:4.3,r:0.72,amp:0.9,speed:2.1,phase:0.4},{type:'boost',x:351,y:-4.43,w:8,h:0.14,angle:0,thrust:34}
       ],
-      checkpoints: [
-        { x: 3,   groundY:  0.0 },
-        { x: 56,  groundY:  0.0 },
-        { x: 100, groundY:  0.0 },
-        { x: 145, groundY:  0.0 },
-        { x: 182, groundY:  2.5 },
-        { x: 270, groundY: -3.0 },
-        { x: 309, groundY:  3.8 }
-      ],
-      finishX: 404,
-      finishY: -5.5,
-      tags: [
-        { x: 35,  y: -2.2, text: 'IRON',      scale: 1.4, rot:  0.0 },
-        { x: 109, y:  0.2, text: 'CRANE',     scale: 1.2, rot: -0.40 },
-        { x: 224, y: -5.0, text: 'DEMO RUN',  scale: 1.3, rot:  0.0 },
-        { x: 300, y: -1.0, text: 'ASCENT',    scale: 1.2, rot: -0.46 },
-        { x: 401, y: -7.3, text: 'FIN',       scale: 1.6, rot:  0.0 }
-      ]
+      checkpoints: [{x:3,groundY:0},{x:56,groundY:0},{x:100,groundY:0},{x:145,groundY:0},{x:182,groundY:2.5},{x:270,groundY:-3},{x:309,groundY:3.8}],
+      finishX: 404, finishY: -5.5,
+      tags: [{x:35,y:-2.2,text:'IRON',scale:1.4,rot:0},{x:109,y:0.2,text:'CRANE',scale:1.2,rot:-0.4},{x:224,y:-5,text:'DEMO RUN',scale:1.3,rot:0},{x:300,y:-1,text:'ASCENT',scale:1.2,rot:-0.46},{x:401,y:-7.3,text:'FIN',scale:1.6,rot:0}]
     },
-
     {
       name: '11 // FRACTURE ZONE',
       verts: [
-        [-16, 12], [-12, 0], [14, 0],
-        // Climb-out trench 1 under 4 crumble bridges (44->56 climbs 22.6 deg)
-        [18, -5.0], [44, -5.0], [56, 0.0], [64, 0.0],
-        [74, -3.2], [96, -3.2],
-        [96.3, -2.75], [100.5, -2.75], [100.8, -2.30], [105.0, -2.30], [105.3, -1.85], [109.5, -1.85], [109.8, -1.40], [114.5, -1.40],
-        [124, 3.6], [132, 3.6],
-        // Climb-out canyon under twin seesaws (166->178 climbs 21.8 deg)
-        [134, -2.8], [166, -2.8], [178, 2.0], [186, 2.0],
-        // Climb-out canyon under turbine & bridges (238->250 climbs 27.3 deg)
-        [196, -2.0], [202, -7.2], [238, -7.2], [250, -1.0], [286, -1.0],
-        [292, 2.0], [292, -8.5], [302, -8.5], [302, 0.6], [312, -2.5], [320, -2.5],
-        [336, -8.5], [346, -8.5], [356, -4.0], [362, -0.5], [362, -13.5],
-        [376, -13.5], [376, -1.8], [390, -6.0], [420, -6.0], [422, 10]
+        [-16,12],[-12,0],[14,0],[18,-5],[44,-5],[56,0],[64,0],[74,-3.2],[96,-3.2],
+        [96.3,-2.75],[100.5,-2.75],[100.8,-2.3],[105,-2.3],[105.3,-1.85],[109.5,-1.85],[109.8,-1.4],[114.5,-1.4],[124,3.6],[132,3.6],
+        [134,-2.8],[166,-2.8],[178,2],[186,2],[196,-2],[202,-7.2],[238,-7.2],[250,-1],[286,-1],
+        [292,2],[292,-8.5],[302,-8.5],[302,0.6],[312,-2.5],[320,-2.5],[336,-8.5],[346,-8.5],[356,-4],[362,-0.5],[362,-13.5],[376,-13.5],[376,-1.8],[390,-6],[420,-6],[422,10]
       ],
-      hazards: [
-        { x0: 292.0, x1: 302.0, y: -8.5 },
-        { x0: 362.0, x1: 376.0, y: -13.5 }
-      ],
+      hazards: [{x0:292,x1:302,y:-8.5},{x0:362,x1:376,y:-13.5}],
       obstacles: [
-        { type: 'boost',   x: 7.0,   y:  0.05, w: 6.0, h: 0.14, angle: 0.0, thrust: 32 },
-        { type: 'crumble', x: 17.5,  y: -0.22, w: 5.6, h: 0.44 },
-        { type: 'crumble', x: 24.0,  y: -0.22, w: 5.6, h: 0.44 },
-        { type: 'crumble', x: 30.5,  y: -0.22, w: 5.6, h: 0.44 },
-        { type: 'crumble', x: 37.0,  y: -0.22, w: 5.6, h: 0.44 },
-        { type: 'drum',    x: 76.0,  y: -2.65, r: 0.50 },
-        { type: 'drum',    x: 80.0,  y: -2.65, r: 0.50 },
-        { type: 'drum',    x: 84.0,  y: -2.65, r: 0.50 },
-        { type: 'drum',    x: 88.0,  y: -2.65, r: 0.50 },
-        { type: 'drum',    x: 92.0,  y: -2.65, r: 0.50 },
-        { type: 'seesaw',  x: 139.5, y:  3.20, w: 8.8, h: 0.40, maxAngle: 0.34 },
-        { type: 'seesaw',  x: 149.5, y:  2.80, w: 8.8, h: 0.40, maxAngle: 0.34 },
-        { type: 'box',     x: 158.5, y:  2.40, w: 5.6, h: 0.45, angle: 0.0 },
-        { type: 'bounce',  x: 159.5, y:  2.68, w: 2.6, h: 0.16, angle: 0.0, ix: 7.5, iy: 13.5 },
-        { type: 'mover',   x: 207.0, y: -2.00, w: 6.4, h: 0.44, ampX:  3.2, ampY: 0, speed: 1.25, phase: 0.0 },
-        { type: 'spinner', x: 218.5, y: -2.20, r: 2.50, blades: 4, speed: -1.00 },
-        { type: 'mover',   x: 230.0, y: -1.60, w: 6.4, h: 0.44, ampX: -3.2, ampY: 0, speed: 1.25, phase: 1.4 },
-        { type: 'pipe',    x: 263.0, y: -1.14, r: 0.50 },
-        { type: 'pipe',    x: 267.0, y: -1.10, r: 0.54 },
-        { type: 'pipe',    x: 271.0, y: -1.12, r: 0.52 },
-        { type: 'pipe',    x: 275.0, y: -1.08, r: 0.56 },
-        { type: 'boost',   x: 280.5, y: -0.93, w: 6.0, h: 0.14, angle: 0.0, thrust: 32 },
-        { type: 'boost',   x: 350.0, y: -6.50, w: 9.0, h: 0.14, angle: 0.422, thrust: 32 }
+        {type:'boost',x:7,y:0.05,w:6,h:0.14,angle:0,thrust:32},
+        {type:'crumble',x:17.5,y:-0.22,w:5.6,h:0.44},{type:'crumble',x:24,y:-0.22,w:5.6,h:0.44},{type:'crumble',x:30.5,y:-0.22,w:5.6,h:0.44},{type:'crumble',x:37,y:-0.22,w:5.6,h:0.44},
+        {type:'drum',x:76,y:-2.65,r:0.5},{type:'drum',x:80,y:-2.65,r:0.5},{type:'drum',x:84,y:-2.65,r:0.5},{type:'drum',x:88,y:-2.65,r:0.5},{type:'drum',x:92,y:-2.65,r:0.5},
+        {type:'seesaw',x:139.5,y:3.2,w:8.8,h:0.4,maxAngle:0.34},{type:'seesaw',x:149.5,y:2.8,w:8.8,h:0.4,maxAngle:0.34},
+        {type:'box',x:158.5,y:2.4,w:5.6,h:0.45,angle:0},{type:'bounce',x:159.5,y:2.68,w:2.6,h:0.16,angle:0,ix:7.5,iy:13.5},
+        {type:'mover',x:207,y:-2,w:6.4,h:0.44,ampX:3.2,ampY:0,speed:1.25,phase:0},{type:'spinner',x:218.5,y:-2.2,r:2.5,blades:4,speed:-1},{type:'mover',x:230,y:-1.6,w:6.4,h:0.44,ampX:-3.2,ampY:0,speed:1.25,phase:1.4},
+        {type:'pipe',x:263,y:-1.14,r:0.5},{type:'pipe',x:267,y:-1.1,r:0.54},{type:'pipe',x:271,y:-1.12,r:0.52},{type:'pipe',x:275,y:-1.08,r:0.56},
+        {type:'boost',x:280.5,y:-0.93,w:6,h:0.14,angle:0,thrust:32},{type:'boost',x:350,y:-6.5,w:9,h:0.14,angle:0.422,thrust:32}
       ],
-      checkpoints: [
-        { x: 3,   groundY:  0.0 },
-        { x: 60,  groundY:  0.0 },
-        { x: 128, groundY:  3.6 },
-        { x: 182, groundY:  2.0 },
-        { x: 254, groundY: -1.0 },
-        { x: 316, groundY: -2.5 }
-      ],
-      finishX: 404,
-      finishY: -6.0,
-      tags: [
-        { x: 28,  y: -6.8, text: 'DON’T STOP', scale: 1.2, rot:  0.0 },
-        { x: 84,  y: -5.2, text: 'ROLL OUT',   scale: 1.3, rot:  0.0 },
-        { x: 218, y: -9.0, text: 'SPINNERS',   scale: 1.4, rot:  0.0 },
-        { x: 401, y: -7.8, text: 'FIN',        scale: 1.6, rot:  0.0 }
-      ]
+      checkpoints: [{x:3,groundY:0},{x:60,groundY:0},{x:128,groundY:3.6},{x:182,groundY:2},{x:254,groundY:-1},{x:316,groundY:-2.5}],
+      finishX: 404, finishY: -6.0,
+      tags: [{x:28,y:-6.8,text:"DON'T STOP",scale:1.2,rot:0},{x:84,y:-5.2,text:'ROLL OUT',scale:1.3,rot:0},{x:218,y:-9,text:'SPINNERS',scale:1.4,rot:0},{x:401,y:-7.8,text:'FIN',scale:1.6,rot:0}]
     },
-
     {
       name: '12 // APEX FINALE',
       verts: [
-        [-16, 12], [-12, 0], [16, 0],
-        [22, 2.8], [22, -7.0], [31, -7.0], [31, 1.5], [40, 1.5],
-        [40, -7.5], [50, -7.5], [50, 2.5], [60, -0.5], [68, -0.5],
-        // Climb-out trench 1 (100->112 climbs 23.8 deg)
-        [72, -5.8], [100, -5.8], [112, -0.5], [148, -0.5],
-        // Climb-out trench 2 under elevator & dual turbines (194->208 climbs 29.1 deg)
-        [150, -6.8], [194, -6.8], [208, 1.0], [216, 1.0],
-        [228, -3.0], [250, -3.0],
-        [250.3, -2.55], [254.5, -2.55], [254.8, -2.10], [259.0, -2.10], [259.3, -1.65], [263.5, -1.65], [263.8, -1.20], [268.0, -1.20], [268.3, -0.75], [273.0, -0.75],
-        [282, 4.2], [290, 4.2], [306, -2.5], [348, -2.5],
-        [364, -9.5], [374, -9.5], [392, 0.8], [392, -15.0],
-        [407, -15.0], [407, -1.5], [422, -7.0], [454, -7.0], [456, 10]
+        [-16,12],[-12,0],[16,0],[22,2.8],[22,-7],[31,-7],[31,1.5],[40,1.5],[40,-7.5],[50,-7.5],[50,2.5],[60,-0.5],[68,-0.5],
+        [72,-5.8],[100,-5.8],[112,-0.5],[148,-0.5],[150,-6.8],[194,-6.8],[208,1],[216,1],[228,-3],[250,-3],
+        [250.3,-2.55],[254.5,-2.55],[254.8,-2.1],[259,-2.1],[259.3,-1.65],[263.5,-1.65],[263.8,-1.2],[268,-1.2],[268.3,-0.75],[273,-0.75],
+        [282,4.2],[290,4.2],[306,-2.5],[348,-2.5],[364,-9.5],[374,-9.5],[392,0.8],[392,-15],[407,-15],[407,-1.5],[422,-7],[454,-7],[456,10]
       ],
-      hazards: [
-        { x0: 22.0,  x1: 31.0,  y: -7.0 },
-        { x0: 40.0,  x1: 50.0,  y: -7.5 },
-        { x0: 392.0, x1: 407.0, y: -15.0 }
-      ],
+      hazards: [{x0:22,x1:31,y:-7},{x0:40,x1:50,y:-7.5},{x0:392,x1:407,y:-15}],
       obstacles: [
-        { type: 'boost',    x: 9.0,   y:  0.05, w: 6.0,  h: 0.14, angle:  0.00,  thrust: 34 },
-        { type: 'bounce',   x: 37.5,  y:  1.58, w: 2.8,  h: 0.16, angle:  0.00,  ix: 8.0, iy: 15.0 },
-        { type: 'crumble',  x: 74.5,  y: -0.60, w: 5.6,  h: 0.44 },
-        { type: 'seesaw',   x: 83.5,  y: -0.60, w: 8.8,  h: 0.40, maxAngle: 0.34 },
-        { type: 'box',      x: 92.5,  y: -0.60, w: 6.8,  h: 0.45, angle: 0.0 },
-        ...crateStack(91.5, -0.35, 3, 2),
-        { type: 'pendulum', x: 124.0, y:  4.90, len: 4.2, r: 0.72, amp: 0.95, speed: 2.2, phase: 0.0 },
-        { type: 'pendulum', x: 137.0, y:  4.90, len: 4.2, r: 0.72, amp: 0.95, speed: 2.2, phase: 1.5 },
-        { type: 'mover',    x: 155.0, y: -1.60, w: 6.2,  h: 0.44, ampX: 0.0, ampY: 3.2, speed: 1.15, phase: 0.0 },
-        { type: 'spinner',  x: 165.5, y: -1.20, r: 2.60, blades: 4, speed: -1.05 },
-        { type: 'spinner',  x: 174.5, y: -0.60, r: 2.60, blades: 4, speed: -1.10 },
-        { type: 'mover',    x: 185.0, y:  1.00, w: 6.4,  h: 0.44, ampX: 4.0, ampY: 0.0, speed: 1.25, phase: 0.8 },
-        { type: 'drum',     x: 226.0, y: -2.40, r: 0.52 },
-        { type: 'drum',     x: 231.0, y: -2.45, r: 0.52 },
-        { type: 'drum',     x: 236.0, y: -2.45, r: 0.52 },
-        { type: 'drum',     x: 241.0, y: -2.45, r: 0.52 },
-        { type: 'pipe',     x: 310.0, y: -2.64, r: 0.50 },
-        { type: 'pipe',     x: 314.5, y: -2.60, r: 0.54 },
-        { type: 'pipe',     x: 319.0, y: -2.62, r: 0.52 },
-        { type: 'pipe',     x: 323.5, y: -2.58, r: 0.58 },
-        ...crateStack(329.5, -2.5, 3, 3),
-        { type: 'boost',    x: 342.0, y: -2.43, w: 8.0,  h: 0.14, angle:  0.00,  thrust: 34 },
-        { type: 'boost',    x: 356.0, y: -6.00, w: 12.0, h: 0.14, angle: -0.412, thrust: 34 },
-        { type: 'boost',    x: 383.0, y: -4.28, w: 12.0, h: 0.14, angle:  0.520, thrust: 36 }
+        {type:'boost',x:9,y:0.05,w:6,h:0.14,angle:0,thrust:34},{type:'bounce',x:37.5,y:1.58,w:2.8,h:0.16,angle:0,ix:8,iy:15},
+        {type:'crumble',x:74.5,y:-0.6,w:5.6,h:0.44},{type:'seesaw',x:83.5,y:-0.6,w:8.8,h:0.4,maxAngle:0.34},{type:'box',x:92.5,y:-0.6,w:6.8,h:0.45,angle:0},...crateStack(91.5,-0.35,3,2),
+        {type:'pendulum',x:124,y:4.9,len:4.2,r:0.72,amp:0.95,speed:2.2,phase:0},{type:'pendulum',x:137,y:4.9,len:4.2,r:0.72,amp:0.95,speed:2.2,phase:1.5},
+        {type:'mover',x:155,y:-1.6,w:6.2,h:0.44,ampX:0,ampY:3.2,speed:1.15,phase:0},{type:'spinner',x:165.5,y:-1.2,r:2.6,blades:4,speed:-1.05},
+        {type:'spinner',x:174.5,y:-0.6,r:2.6,blades:4,speed:-1.1},{type:'mover',x:185,y:1,w:6.4,h:0.44,ampX:4,ampY:0,speed:1.25,phase:0.8},
+        {type:'drum',x:226,y:-2.4,r:0.52},{type:'drum',x:231,y:-2.45,r:0.52},{type:'drum',x:236,y:-2.45,r:0.52},{type:'drum',x:241,y:-2.45,r:0.52},
+        {type:'pipe',x:310,y:-2.64,r:0.5},{type:'pipe',x:314.5,y:-2.6,r:0.54},{type:'pipe',x:319,y:-2.62,r:0.52},{type:'pipe',x:323.5,y:-2.58,r:0.58},...crateStack(329.5,-2.5,3,3),
+        {type:'boost',x:342,y:-2.43,w:8,h:0.14,angle:0,thrust:34},{type:'boost',x:356,y:-6,w:12,h:0.14,angle:-0.412,thrust:34},{type:'boost',x:383,y:-4.28,w:12,h:0.14,angle:0.52,thrust:36}
       ],
-      checkpoints: [
-        { x: 3,   groundY:  0.0 },
-        { x: 64,  groundY: -0.5 },
-        { x: 144, groundY: -0.5 },
-        { x: 212, groundY:  1.0 },
-        { x: 286, groundY:  4.2 },
-        { x: 336, groundY: -2.5 }
-      ],
-      finishX: 438,
-      finishY: -7.0,
-      tags: [
-        { x: 10,  y: -1.8, text: 'APEX',      scale: 1.4, rot:  0.0 },
-        { x: 86,  y: -7.6, text: 'GAUNTLET',  scale: 1.3, rot:  0.0 },
-        { x: 170, y: -8.6, text: 'TURBINE X2',scale: 1.3, rot:  0.0 },
-        { x: 277, y:  0.6, text: 'CLIMB',     scale: 1.3, rot: -0.46 },
-        { x: 378, y: -6.8, text: 'HYPER',     scale: 1.6, rot:  0.48 },
-        { x: 435, y: -8.8, text: 'FIN',       scale: 1.6, rot:  0.0 }
-      ]
+      checkpoints: [{x:3,groundY:0},{x:64,groundY:-0.5},{x:144,groundY:-0.5},{x:212,groundY:1},{x:286,groundY:4.2},{x:336,groundY:-2.5}],
+      finishX: 438, finishY: -7.0,
+      tags: [{x:10,y:-1.8,text:'APEX',scale:1.4,rot:0},{x:86,y:-7.6,text:'GAUNTLET',scale:1.3,rot:0},{x:170,y:-8.6,text:'TURBINE X2',scale:1.3,rot:0},{x:277,y:0.6,text:'CLIMB',scale:1.3,rot:-0.46},{x:378,y:-6.8,text:'HYPER',scale:1.6,rot:0.48},{x:435,y:-8.8,text:'FIN',scale:1.6,rot:0}]
     }
   ];
 
   const SKYLINE = Array.from({ length: 84 }, (_, i) => ({
-    x: i * 18 - 40,
-    w: 8 + ((i * 37) % 14),
-    h: 14 + ((i * 53) % 28),
-    layer: i % 2,
-    slant: ((i % 3) - 1) * 1.4,
-    hasTag: i % 3 === 0,
-    hasTruss: i % 4 === 1
+    x: i * 18 - 40, w: 8 + ((i * 37) % 14), h: 14 + ((i * 53) % 28),
+    layer: i % 2, slant: ((i % 3) - 1) * 1.4, hasTag: i % 3 === 0, hasTruss: i % 4 === 1
   }));
 
   // ============================================================================
@@ -1108,78 +514,49 @@
   let viewW = window.innerWidth, viewH = window.innerHeight, dpr = 1;
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, CONFIG.visuals.maxDpr);
-    viewW = window.innerWidth;
-    viewH = window.innerHeight;
-    canvas.width = Math.floor(viewW * dpr);
-    canvas.height = Math.floor(viewH * dpr);
+    viewW = window.innerWidth; viewH = window.innerHeight;
+    canvas.width = Math.floor(viewW * dpr); canvas.height = Math.floor(viewH * dpr);
   }
   window.addEventListener('resize', resize);
   resize();
 
   function createGrainPattern() {
-    const c = document.createElement('canvas');
-    c.width = 128; c.height = 128;
-    const g = c.getContext('2d');
-    const img = g.createImageData(128, 128);
+    const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+    const g = c.getContext('2d'); const img = g.createImageData(128, 128);
     for (let i = 0; i < img.data.length; i += 4) {
       const v = (Math.random() * 255) | 0;
-      img.data[i] = img.data[i+1] = img.data[i+2] = v;
-      img.data[i+3] = CONFIG.visuals.grainAlpha;
+      img.data[i] = img.data[i+1] = img.data[i+2] = v; img.data[i+3] = CONFIG.visuals.grainAlpha;
     }
     g.putImageData(img, 0, 0);
     return ctx.createPattern(c, 'repeat');
   }
   const grainPattern = createGrainPattern();
 
-  // --- Game State ---
-  let currentTrackIdx = 0;
-  let activeTrack = TRACKS[0];
-
+  let currentTrackIdx = 0, activeTrack = TRACKS[0];
   let world, chassis, rearWheel, frontWheel, riderBody;
   let rearJoint, frontJoint, riderJoint;
   let rearRestLocal, frontRestLocal, rearAxisUnit, frontAxisUnit;
   let rearContacts = 0, frontContacts = 0;
-  let crashed = false, pendingCrash = false, finished = false;
-  let pendingBounce = null;
-  let currentCheckpoint = 0, faults = 0, runTime = 0, simTime = 0, timerStarted = false;
-  let unpinchTimer = 0;
+  let crashed = false, pendingCrash = false, finished = false, pendingBounce = null;
+  let currentCheckpoint = 0, faults = 0, runTime = 0, simTime = 0, timerStarted = false, unpinchTimer = 0;
   let particles = [];
+  let crates = [], drums = [], seesaws = [], movers = [], spinners = [], pendulums = [], crumbles = [], bouncePads = [], boostPads = [];
+  let bounceByFixture = new Map(), boostByFixture = new Map(), crumbleByFixture = new Map(), activeBoostCounts = new Map();
+  let camX = CONFIG.camera.initialX, camY = CONFIG.camera.initialY, camZoom = CONFIG.camera.initialZoom;
 
-  let crates = [];
-  let drums = [];
-  let seesaws = [];
-  let movers = [];
-  let spinners = [];
-  let pendulums = [];
-  let crumbles = [];
-  let bouncePads = [];
-  let boostPads = [];
-  let bounceByFixture = new Map();
-  let boostByFixture = new Map();
-  let crumbleByFixture = new Map();
-  let activeBoostCounts = new Map();
-
-  let camX = CONFIG.camera.initialX;
-  let camY = CONFIG.camera.initialY;
-  let camZoom = CONFIG.camera.initialZoom;
-
-  const uiTitle = document.getElementById('ui-title');
-  const uiTime = document.getElementById('ui-time');
-  const uiFaults = document.getElementById('ui-faults');
-  const uiSpeed = document.getElementById('ui-speed');
-  const uiNet = document.getElementById('ui-net');
-  const banner = document.getElementById('banner');
-  const bannerTitle = document.getElementById('banner-title');
-  const bannerSub = document.getElementById('banner-sub');
+  const uiTitle = document.getElementById('ui-title'), uiTime = document.getElementById('ui-time');
+  const uiFaults = document.getElementById('ui-faults'), uiSpeed = document.getElementById('ui-speed');
+  const uiNet = document.getElementById('ui-net'), banner = document.getElementById('banner');
+  const bannerTitle = document.getElementById('banner-title'), bannerSub = document.getElementById('banner-sub');
   const trackBtns = document.querySelectorAll('.track-btn');
 
-  // --- Input Handling ---
+  // --- Input ---
   const keys = { gas: false, brake: false, back: false, fwd: false };
   const keyLookup = {};
-  for (const code of CONFIG.controls.gas)      keyLookup[code] = 'gas';
-  for (const code of CONFIG.controls.brake)    keyLookup[code] = 'brake';
-  for (const code of CONFIG.controls.leanBack) keyLookup[code] = 'back';
-  for (const code of CONFIG.controls.leanFwd)  keyLookup[code] = 'fwd';
+  for (const c of CONFIG.controls.gas) keyLookup[c] = 'gas';
+  for (const c of CONFIG.controls.brake) keyLookup[c] = 'brake';
+  for (const c of CONFIG.controls.leanBack) keyLookup[c] = 'back';
+  for (const c of CONFIG.controls.leanFwd) keyLookup[c] = 'fwd';
 
   const quickTrackKeys = {
     Digit1: 0, Digit2: 1, Digit3: 2, Digit4: 3, Digit5: 4, Digit6: 5,
@@ -1191,23 +568,13 @@
     if (CONFIG.controls.restart.includes(e.code))    { e.preventDefault(); resetFullRun(); }
     if (CONFIG.controls.checkpoint.includes(e.code)) { e.preventDefault(); respawnCheckpoint(); }
     if (e.code === 'Enter' && finished)              { e.preventDefault(); advanceAfterFinish(); }
-    if (quickTrackKeys[e.code] !== undefined) {
-      e.preventDefault();
-      selectTrack(quickTrackKeys[e.code]);
-    }
+    if (quickTrackKeys[e.code] !== undefined)        { e.preventDefault(); selectTrack(quickTrackKeys[e.code]); }
     if (e.code === 'BracketLeft')  { e.preventDefault(); selectTrack((currentTrackIdx - 1 + TRACKS.length) % TRACKS.length); }
     if (e.code === 'BracketRight') { e.preventDefault(); selectTrack((currentTrackIdx + 1) % TRACKS.length); }
   });
-  window.addEventListener('keyup', (e) => {
-    if (keyLookup[e.code]) keys[keyLookup[e.code]] = false;
-  });
+  window.addEventListener('keyup', (e) => { if (keyLookup[e.code]) keys[keyLookup[e.code]] = false; });
 
-  trackBtns.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      btn.blur();
-      selectTrack(Number(btn.dataset.track));
-    });
-  });
+  trackBtns.forEach((btn) => btn.addEventListener('click', () => { btn.blur(); selectTrack(Number(btn.dataset.track)); }));
 
   function selectTrack(idx) {
     if (idx < 0 || idx >= TRACKS.length) return;
@@ -1217,43 +584,26 @@
     trackBtns.forEach((b) => b.classList.toggle('active', Number(b.dataset.track) === idx));
     resetFullRun();
   }
-
-  function advanceAfterFinish() {
-    selectTrack((currentTrackIdx + 1) % TRACKS.length);
-  }
+  function advanceAfterFinish() { selectTrack((currentTrackIdx + 1) % TRACKS.length); }
 
   // ============================================================================
-  // MULTIPLAYER GHOST NETWORKING
+  // MULTIPLAYER GHOSTS
   // ============================================================================
   const ghosts = new Map();
-  let ws = null;
-  let onlineCount = 1;
-  let lastSendTime = 0;
-  let lastSentX = 0, lastSentY = 0, lastSentAng = 0, lastSentTrack = -1;
+  let ws = null, onlineCount = 1, lastSendTime = 0, lastSentX = 0, lastSentY = 0, lastSentAng = 0, lastSentTrack = -1;
   const txBuffer = new Float32Array(13);
 
   function connectMultiplayer() {
     if (!CONFIG.multiplayer.enabled || location.protocol === 'file:') {
-      uiNet.textContent = 'SOLO MODE // LOCAL FILE';
-      return;
+      uiNet.textContent = 'SOLO MODE // LOCAL FILE'; return;
     }
-
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     const room = new URLSearchParams(location.search).get('room') || 'lab-main';
     const url = `${proto}//${location.host}/ws${room ? `?room=${encodeURIComponent(room)}` : ''}`;
+    try { ws = new WebSocket(url); ws.binaryType = 'arraybuffer'; }
+    catch { uiNet.textContent = 'SOLO MODE // OFFLINE'; return; }
 
-    try {
-      ws = new WebSocket(url);
-      ws.binaryType = 'arraybuffer';
-    } catch {
-      uiNet.textContent = 'SOLO MODE // OFFLINE';
-      return;
-    }
-
-    ws.onopen = () => {
-      uiNet.textContent = `ROOM: ${room.toUpperCase()} // CONNECTED`;
-    };
-
+    ws.onopen = () => { uiNet.textContent = `ROOM: ${room.toUpperCase()} // CONNECTED`; };
     ws.onmessage = (event) => {
       if (typeof event.data === 'string') {
         try {
@@ -1269,50 +619,26 @@
         } catch {}
         return;
       }
-
       if (event.data instanceof ArrayBuffer && event.data.byteLength === 56) {
         const dv = new DataView(event.data);
-        const id = dv.getUint16(0, true);
-        const hue = dv.getUint16(2, true);
+        const id = dv.getUint16(0, true), hue = dv.getUint16(2, true);
         const pose = new Float32Array(event.data, 4, 13);
         const now = performance.now();
-        const flags = Math.round(pose[12]);
-        const isCrashed = (flags & 1) !== 0;
-        const trackIdx = flags >> 2;
-
+        const flags = Math.round(pose[12]), isCrashed = (flags & 1) !== 0, trackIdx = flags >> 2;
         let g = ghosts.get(id);
         if (!g) {
-          g = {
-            id,
-            hue,
-            trackIdx,
-            cur: new Float32Array(pose),
-            target: new Float32Array(pose),
-            trail: [],
-            wasCrashed: isCrashed,
-            lastSeen: now
-          };
+          g = { id, hue, trackIdx, cur: new Float32Array(pose), target: new Float32Array(pose), trail: [], wasCrashed: isCrashed, lastSeen: now };
           ghosts.set(id, g);
         } else {
           const jumpDist = Math.hypot(pose[0] - g.cur[0], pose[1] - g.cur[1]);
-          const switchedTrack = g.trackIdx !== trackIdx;
-          g.hue = hue;
-          g.trackIdx = trackIdx;
-          g.target.set(pose);
-          g.lastSeen = now;
-          if (switchedTrack || jumpDist > CONFIG.multiplayer.snapDistance) {
-            g.cur.set(pose);
-            g.trail.length = 0;
-          }
+          const switched = g.trackIdx !== trackIdx;
+          g.hue = hue; g.trackIdx = trackIdx; g.target.set(pose); g.lastSeen = now;
+          if (switched || jumpDist > CONFIG.multiplayer.snapDistance) { g.cur.set(pose); g.trail.length = 0; }
         }
-
-        if (isCrashed && !g.wasCrashed && g.trackIdx === currentTrackIdx) {
-          spawnTechnicolorBurst({ x: pose[9], y: pose[10] }, hue);
-        }
+        if (isCrashed && !g.wasCrashed && g.trackIdx === currentTrackIdx) spawnTechnicolorBurst({ x: pose[9], y: pose[10] }, hue);
         g.wasCrashed = isCrashed;
       }
     };
-
     ws.onclose = () => {
       uiNet.textContent = 'DISCONNECTED // RECONNECTING...';
       ghosts.clear();
@@ -1322,289 +648,123 @@
 
   function sendLocalPose(now) {
     if (!ws || ws.readyState !== WebSocket.OPEN || !chassis) return;
-    const minMs = 1000 / CONFIG.multiplayer.sendHz;
-    if (now - lastSendTime < minMs && lastSentTrack === currentTrackIdx) return;
-
-    const cp = chassis.getPosition();
-    const ca = chassis.getAngle();
+    if (now - lastSendTime < 1000 / CONFIG.multiplayer.sendHz && lastSentTrack === currentTrackIdx) return;
+    const cp = chassis.getPosition(), ca = chassis.getAngle();
     const moved = Math.abs(cp.x - lastSentX) + Math.abs(cp.y - lastSentY) + Math.abs(ca - lastSentAng);
     if (moved < 0.004 && lastSentTrack === currentTrackIdx && now - lastSendTime < CONFIG.multiplayer.idleSendMs) return;
-
-    const rw = rearWheel.getPosition();
-    const fw = frontWheel.getPosition();
-    const rd = riderBody.getPosition();
-
-    txBuffer[0]  = cp.x;
-    txBuffer[1]  = cp.y;
-    txBuffer[2]  = ca;
-    txBuffer[3]  = rw.x;
-    txBuffer[4]  = rw.y;
-    txBuffer[5]  = rearWheel.getAngle();
-    txBuffer[6]  = fw.x;
-    txBuffer[7]  = fw.y;
-    txBuffer[8]  = frontWheel.getAngle();
-    txBuffer[9]  = rd.x;
-    txBuffer[10] = rd.y;
-    txBuffer[11] = riderBody.getAngle();
+    const rw = rearWheel.getPosition(), fw = frontWheel.getPosition(), rd = riderBody.getPosition();
+    txBuffer[0] = cp.x; txBuffer[1] = cp.y; txBuffer[2] = ca;
+    txBuffer[3] = rw.x; txBuffer[4] = rw.y; txBuffer[5] = rearWheel.getAngle();
+    txBuffer[6] = fw.x; txBuffer[7] = fw.y; txBuffer[8] = frontWheel.getAngle();
+    txBuffer[9] = rd.x; txBuffer[10] = rd.y; txBuffer[11] = riderBody.getAngle();
     txBuffer[12] = (crashed ? 1 : 0) | (finished ? 2 : 0) | (currentTrackIdx << 2);
-
-    try {
-      ws.send(txBuffer.buffer);
-      lastSendTime = now;
-      lastSentX = cp.x;
-      lastSentY = cp.y;
-      lastSentAng = ca;
-      lastSentTrack = currentTrackIdx;
-    } catch {}
+    try { ws.send(txBuffer.buffer); lastSendTime = now; lastSentX = cp.x; lastSentY = cp.y; lastSentAng = ca; lastSentTrack = currentTrackIdx; } catch {}
   }
 
-  function normVec(v) {
-    const len = Math.hypot(v.x, v.y) || 1;
-    return pl.Vec2(v.x / len, v.y / len);
-  }
+  function normVec(v) { const len = Math.hypot(v.x, v.y) || 1; return pl.Vec2(v.x / len, v.y / len); }
 
   function buildWorld(cp) {
     world = new pl.World({ gravity: pl.Vec2(0, CONFIG.physics.gravityY) });
-    rearContacts = 0; frontContacts = 0;
-    crashed = false; pendingCrash = false; finished = false;
-    pendingBounce = null;
-    unpinchTimer = 0;
-    banner.classList.remove('visible');
-
-    crates = [];
-    drums = [];
-    seesaws = [];
-    movers = [];
-    spinners = [];
-    pendulums = [];
-    crumbles = [];
-    bouncePads = [];
-    boostPads = [];
-    bounceByFixture.clear();
-    boostByFixture.clear();
-    crumbleByFixture.clear();
-    activeBoostCounts.clear();
+    rearContacts = 0; frontContacts = 0; crashed = false; pendingCrash = false; finished = false;
+    pendingBounce = null; unpinchTimer = 0; banner.classList.remove('visible');
+    crates = []; drums = []; seesaws = []; movers = []; spinners = []; pendulums = []; crumbles = [];
+    bouncePads = []; boostPads = [];
+    bounceByFixture.clear(); boostByFixture.clear(); crumbleByFixture.clear(); activeBoostCounts.clear();
 
     const terrainBody = world.createBody();
-    const chain = new pl.Chain(activeTrack.verts.map(([x, y]) => pl.Vec2(x, y)), false);
-    const tf = terrainBody.createFixture(chain, {
-      friction: CONFIG.physics.terrainFriction,
-      restitution: CONFIG.physics.terrainRestitution
-    });
-    tf.setUserData('terrain');
+    terrainBody.createFixture(new pl.Chain(activeTrack.verts.map(([x, y]) => pl.Vec2(x, y)), false), {
+      friction: CONFIG.physics.terrainFriction, restitution: CONFIG.physics.terrainRestitution
+    }).setUserData('terrain');
 
     for (const hz of (activeTrack.hazards || [])) {
       const hb = world.createBody({ position: pl.Vec2((hz.x0 + hz.x1) * 0.5, hz.y + 0.10) });
-      const hf = hb.createFixture(new pl.Box((hz.x1 - hz.x0) * 0.5, 0.14), { friction: 0.9 });
-      hf.setUserData('hazard');
+      hb.createFixture(new pl.Box((hz.x1 - hz.x0) * 0.5, 0.14), { friction: 0.9 }).setUserData('hazard');
     }
 
     for (const ob of activeTrack.obstacles) {
       if (ob.type === 'pipe' || ob.type === 'box') {
         const b = world.createBody({ position: pl.Vec2(ob.x, ob.y), angle: ob.angle || 0 });
-        const shape = ob.type === 'pipe' ? new pl.Circle(ob.r) : new pl.Box(ob.w / 2, ob.h / 2);
-        const f = b.createFixture(shape, {
-          friction: CONFIG.physics.obstacleFriction,
-          restitution: CONFIG.physics.obstacleRestitution
-        });
-        f.setUserData('terrain');
+        b.createFixture(ob.type === 'pipe' ? new pl.Circle(ob.r) : new pl.Box(ob.w / 2, ob.h / 2), {
+          friction: CONFIG.physics.obstacleFriction, restitution: CONFIG.physics.obstacleRestitution
+        }).setUserData('terrain');
       } else if (ob.type === 'crate') {
-        const b = world.createDynamicBody({
-          position: pl.Vec2(ob.x, ob.y),
-          angle: ob.angle || 0,
-          linearDamping: 0.15,
-          angularDamping: 0.4
-        });
-        const f = b.createFixture(new pl.Box(ob.w / 2, ob.h / 2), {
-          density: CONFIG.physics.crateDensity,
-          friction: CONFIG.physics.crateFriction,
-          restitution: 0.08
-        });
-        f.setUserData('prop');
+        const b = world.createDynamicBody({ position: pl.Vec2(ob.x, ob.y), angle: ob.angle || 0, linearDamping: 0.15, angularDamping: 0.4 });
+        b.createFixture(new pl.Box(ob.w / 2, ob.h / 2), { density: CONFIG.physics.crateDensity, friction: CONFIG.physics.crateFriction, restitution: 0.08 }).setUserData('prop');
         crates.push({ body: b, w: ob.w, h: ob.h });
       } else if (ob.type === 'drum') {
-        const b = world.createDynamicBody({
-          position: pl.Vec2(ob.x, ob.y),
-          linearDamping: 0.1,
-          angularDamping: 0.35
-        });
-        const f = b.createFixture(new pl.Circle(ob.r), {
-          density: CONFIG.physics.drumDensity,
-          friction: CONFIG.physics.drumFriction,
-          restitution: 0.12
-        });
-        f.setUserData('prop');
+        const b = world.createDynamicBody({ position: pl.Vec2(ob.x, ob.y), linearDamping: 0.1, angularDamping: 0.35 });
+        b.createFixture(new pl.Circle(ob.r), { density: CONFIG.physics.drumDensity, friction: CONFIG.physics.drumFriction, restitution: 0.12 }).setUserData('prop');
         drums.push({ body: b, r: ob.r });
       } else if (ob.type === 'seesaw') {
         const anchor = world.createBody({ position: pl.Vec2(ob.x, ob.y) });
-        const beam = world.createDynamicBody({
-          position: pl.Vec2(ob.x, ob.y),
-          angularDamping: 2.2
-        });
-        const f = beam.createFixture(new pl.Box(ob.w / 2, ob.h / 2), {
-          density: CONFIG.physics.seesawDensity,
-          friction: 1.55,
-          restitution: 0.0
-        });
-        f.setUserData('terrain');
-        world.createJoint(new pl.RevoluteJoint({
-          enableLimit: true,
-          lowerAngle: -(ob.maxAngle || 0.34),
-          upperAngle:  (ob.maxAngle || 0.34)
-        }, anchor, beam, pl.Vec2(ob.x, ob.y)));
+        const beam = world.createDynamicBody({ position: pl.Vec2(ob.x, ob.y), angularDamping: 2.2 });
+        beam.createFixture(new pl.Box(ob.w / 2, ob.h / 2), { density: CONFIG.physics.seesawDensity, friction: 1.55 }).setUserData('terrain');
+        world.createJoint(new pl.RevoluteJoint({ enableLimit: true, lowerAngle: -(ob.maxAngle || 0.34), upperAngle: (ob.maxAngle || 0.34) }, anchor, beam, pl.Vec2(ob.x, ob.y)));
         seesaws.push({ body: beam, x: ob.x, y: ob.y, w: ob.w, h: ob.h });
       } else if (ob.type === 'mover') {
-        const theta0 = simTime * ob.speed + (ob.phase || 0);
-        const ix = ob.x + (ob.ampX || 0) * Math.sin(theta0);
-        const iy = ob.y + (ob.ampY || 0) * Math.sin(theta0);
-        const b = world.createKinematicBody({ position: pl.Vec2(ix, iy) });
-        const f = b.createFixture(new pl.Box(ob.w / 2, ob.h / 2), {
-          friction: 1.65,
-          restitution: 0.0
-        });
-        f.setUserData('terrain');
+        const th0 = simTime * ob.speed + (ob.phase || 0);
+        const b = world.createKinematicBody({ position: pl.Vec2(ob.x + (ob.ampX || 0) * Math.sin(th0), ob.y + (ob.ampY || 0) * Math.sin(th0)) });
+        b.createFixture(new pl.Box(ob.w / 2, ob.h / 2), { friction: 1.65 }).setUserData('terrain');
         movers.push({ body: b, cfg: ob });
       } else if (ob.type === 'pendulum') {
-        const theta0 = ob.amp * Math.sin(simTime * ob.speed + (ob.phase || 0));
-        const bx = ob.x + ob.len * Math.sin(theta0);
-        const by = ob.y - ob.len * Math.cos(theta0);
-        const b = world.createKinematicBody({ position: pl.Vec2(bx, by), angle: theta0 });
-        const f = b.createFixture(new pl.Circle(ob.r), {
-          friction: 1.0,
-          restitution: 0.25
-        });
-        f.setUserData('terrain');
+        const th0 = ob.amp * Math.sin(simTime * ob.speed + (ob.phase || 0));
+        const b = world.createKinematicBody({ position: pl.Vec2(ob.x + ob.len * Math.sin(th0), ob.y - ob.len * Math.cos(th0)), angle: th0 });
+        b.createFixture(new pl.Circle(ob.r), { friction: 1.0, restitution: 0.25 }).setUserData('terrain');
         pendulums.push({ body: b, cfg: ob });
       } else if (ob.type === 'crumble') {
         const b = world.createKinematicBody({ position: pl.Vec2(ob.x, ob.y) });
-        const f = b.createFixture(new pl.Box(ob.w / 2, ob.h / 2), {
-          friction: 1.55,
-          restitution: 0.0
-        });
+        const f = b.createFixture(new pl.Box(ob.w / 2, ob.h / 2), { friction: 1.55 });
         f.setUserData('terrain');
-        const cObj = {
-          body: b, x: ob.x, y: ob.y, w: ob.w, h: ob.h,
-          delay: ob.delay || CONFIG.physics.crumbleDelay,
-          state: 'idle', timer: 0, vy: 0
-        };
-        crumbles.push(cObj);
-        crumbleByFixture.set(f, cObj);
+        const cObj = { body: b, x: ob.x, y: ob.y, w: ob.w, h: ob.h, delay: ob.delay || CONFIG.physics.crumbleDelay, state: 'idle', timer: 0, vy: 0 };
+        crumbles.push(cObj); crumbleByFixture.set(f, cObj);
       } else if (ob.type === 'spinner') {
         const hub = world.createBody({ position: pl.Vec2(ob.x, ob.y) });
         const wheel = world.createDynamicBody({ position: pl.Vec2(ob.x, ob.y) });
-        const f1 = wheel.createFixture(new pl.Box(ob.r, 0.20), { density: 5.0, friction: 1.5 });
-        const f2 = wheel.createFixture(new pl.Box(0.20, ob.r), { density: 5.0, friction: 1.5 });
-        f1.setUserData('terrain');
-        f2.setUserData('terrain');
-        world.createJoint(new pl.RevoluteJoint({
-          enableMotor: true,
-          motorSpeed: ob.speed,
-          maxMotorTorque: CONFIG.physics.spinnerTorque
-        }, hub, wheel, pl.Vec2(ob.x, ob.y)));
+        wheel.createFixture(new pl.Box(ob.r, 0.20), { density: 5.0, friction: 1.5 }).setUserData('terrain');
+        wheel.createFixture(new pl.Box(0.20, ob.r), { density: 5.0, friction: 1.5 }).setUserData('terrain');
+        world.createJoint(new pl.RevoluteJoint({ enableMotor: true, motorSpeed: ob.speed, maxMotorTorque: CONFIG.physics.spinnerTorque }, hub, wheel, pl.Vec2(ob.x, ob.y)));
         spinners.push({ body: wheel, x: ob.x, y: ob.y, r: ob.r });
       } else if (ob.type === 'bounce') {
         const b = world.createBody({ position: pl.Vec2(ob.x, ob.y), angle: ob.angle || 0 });
         const f = b.createFixture(new pl.Box(ob.w / 2, ob.h / 2), { friction: 0.6, restitution: 0.2 });
         f.setUserData('bounce');
         const pad = { ...ob, lastHit: -10, flash: 0 };
-        bouncePads.push(pad);
-        bounceByFixture.set(f, pad);
+        bouncePads.push(pad); bounceByFixture.set(f, pad);
       } else if (ob.type === 'boost') {
         const b = world.createBody({ position: pl.Vec2(ob.x, ob.y), angle: ob.angle || 0 });
-        const f = b.createFixture(new pl.Box(ob.w / 2, ob.h / 2), { friction: 1.5, restitution: 0.0 });
+        const f = b.createFixture(new pl.Box(ob.w / 2, ob.h / 2), { friction: 1.5 });
         f.setUserData('boost');
-        boostPads.push(ob);
-        boostByFixture.set(f, ob);
-        activeBoostCounts.set(ob, 0);
+        boostPads.push(ob); boostByFixture.set(f, ob); activeBoostCounts.set(ob, 0);
       }
     }
 
     const sx = cp.x, sy = cp.groundY + 1.45;
+    chassis = world.createDynamicBody({ position: pl.Vec2(sx, sy), angularDamping: CONFIG.bike.chassisAngularDamping, linearDamping: CONFIG.bike.chassisLinearDamping });
+    chassis.createFixture(new pl.Polygon([pl.Vec2(-0.46,-0.05),pl.Vec2(0.36,-0.04),pl.Vec2(0.42,0.34),pl.Vec2(-0.42,0.28)]), {
+      density: CONFIG.bike.chassisDensity, friction: CONFIG.bike.chassisFriction, restitution: CONFIG.bike.chassisRestitution, filterGroupIndex: -1
+    }).setUserData('chassis');
 
-    chassis = world.createDynamicBody({
-      position: pl.Vec2(sx, sy),
-      angularDamping: CONFIG.bike.chassisAngularDamping,
-      linearDamping: CONFIG.bike.chassisLinearDamping
-    });
-    const framePoly = new pl.Polygon([
-      pl.Vec2(-0.46, -0.05),
-      pl.Vec2( 0.36, -0.04),
-      pl.Vec2( 0.42,  0.34),
-      pl.Vec2(-0.42,  0.28)
-    ]);
-    const frameFix = chassis.createFixture(framePoly, {
-      density: CONFIG.bike.chassisDensity,
-      friction: CONFIG.bike.chassisFriction,
-      restitution: CONFIG.bike.chassisRestitution,
-      filterGroupIndex: -1
-    });
-    frameFix.setUserData('chassis');
-
-    const wheelOpts = {
-      density: CONFIG.bike.wheelDensity,
-      friction: CONFIG.bike.wheelFriction,
-      restitution: CONFIG.bike.wheelRestitution,
-      filterGroupIndex: -1
-    };
+    const wOpts = { density: CONFIG.bike.wheelDensity, friction: CONFIG.bike.wheelFriction, restitution: CONFIG.bike.wheelRestitution, filterGroupIndex: -1 };
     rearRestLocal = pl.Vec2(CONFIG.bike.rearWheelOffset.x, CONFIG.bike.rearWheelOffset.y);
     frontRestLocal = pl.Vec2(CONFIG.bike.frontWheelOffset.x, CONFIG.bike.frontWheelOffset.y);
-    rearAxisUnit = normVec(CONFIG.suspension.rearAxis);
-    frontAxisUnit = normVec(CONFIG.suspension.frontAxis);
+    rearAxisUnit = normVec(CONFIG.suspension.rearAxis); frontAxisUnit = normVec(CONFIG.suspension.frontAxis);
 
-    rearWheel = world.createDynamicBody({
-      position: pl.Vec2(sx + rearRestLocal.x, sy + rearRestLocal.y),
-      angularDamping: CONFIG.bike.wheelAngularDamping
-    });
-    const rwFix = rearWheel.createFixture(new pl.Circle(CONFIG.bike.wheelRadius), wheelOpts);
-    rwFix.setUserData('rearWheel');
+    rearWheel = world.createDynamicBody({ position: pl.Vec2(sx + rearRestLocal.x, sy + rearRestLocal.y), angularDamping: CONFIG.bike.wheelAngularDamping });
+    rearWheel.createFixture(new pl.Circle(CONFIG.bike.wheelRadius), wOpts).setUserData('rearWheel');
 
-    frontWheel = world.createDynamicBody({
-      position: pl.Vec2(sx + frontRestLocal.x, sy + frontRestLocal.y),
-      angularDamping: CONFIG.bike.wheelAngularDamping
-    });
-    const fwFix = frontWheel.createFixture(new pl.Circle(CONFIG.bike.wheelRadius), wheelOpts);
-    fwFix.setUserData('frontWheel');
+    frontWheel = world.createDynamicBody({ position: pl.Vec2(sx + frontRestLocal.x, sy + frontRestLocal.y), angularDamping: CONFIG.bike.wheelAngularDamping });
+    frontWheel.createFixture(new pl.Circle(CONFIG.bike.wheelRadius), wOpts).setUserData('frontWheel');
 
-    rearJoint = world.createJoint(new pl.WheelJoint({
-      motorSpeed: 0,
-      maxMotorTorque: CONFIG.drivetrain.gasMaxTorque,
-      enableMotor: true,
-      frequencyHz: CONFIG.suspension.rearHz,
-      dampingRatio: CONFIG.suspension.rearDamping
-    }, chassis, rearWheel, rearWheel.getPosition(), rearAxisUnit));
+    rearJoint = world.createJoint(new pl.WheelJoint({ motorSpeed: 0, maxMotorTorque: CONFIG.drivetrain.gasMaxTorque, enableMotor: true, frequencyHz: CONFIG.suspension.rearHz, dampingRatio: CONFIG.suspension.rearDamping }, chassis, rearWheel, rearWheel.getPosition(), rearAxisUnit));
+    frontJoint = world.createJoint(new pl.WheelJoint({ motorSpeed: 0, maxMotorTorque: 0, enableMotor: true, frequencyHz: CONFIG.suspension.frontHz, dampingRatio: CONFIG.suspension.frontDamping }, chassis, frontWheel, frontWheel.getPosition(), frontAxisUnit));
 
-    frontJoint = world.createJoint(new pl.WheelJoint({
-      motorSpeed: 0,
-      maxMotorTorque: 0,
-      enableMotor: true,
-      frequencyHz: CONFIG.suspension.frontHz,
-      dampingRatio: CONFIG.suspension.frontDamping
-    }, chassis, frontWheel, frontWheel.getPosition(), frontAxisUnit));
-
-    riderBody = world.createDynamicBody({
-      position: pl.Vec2(sx + CONFIG.rider.offset.x, sy + CONFIG.rider.offset.y),
-      angularDamping: CONFIG.rider.angularDamping
-    });
-    const torsoFix = riderBody.createFixture(new pl.Box(0.16, 0.34), {
-      density: CONFIG.rider.torsoDensity, friction: 0.4, filterGroupIndex: -1
-    });
-    torsoFix.setUserData('fatal');
-
-    const headFix = riderBody.createFixture(new pl.Circle(pl.Vec2(0.06, 0.48), 0.21), {
-      density: CONFIG.rider.headDensity,
-      friction: 0.5,
-      restitution: CONFIG.rider.headRestitution,
-      filterGroupIndex: -1
-    });
-    headFix.setUserData('fatal');
+    riderBody = world.createDynamicBody({ position: pl.Vec2(sx + CONFIG.rider.offset.x, sy + CONFIG.rider.offset.y), angularDamping: CONFIG.rider.angularDamping });
+    riderBody.createFixture(new pl.Box(0.16, 0.34), { density: CONFIG.rider.torsoDensity, friction: 0.4, filterGroupIndex: -1 }).setUserData('fatal');
+    riderBody.createFixture(new pl.Circle(pl.Vec2(0.06, 0.48), 0.21), { density: CONFIG.rider.headDensity, friction: 0.5, restitution: CONFIG.rider.headRestitution, filterGroupIndex: -1 }).setUserData('fatal');
 
     riderJoint = world.createJoint(new pl.RevoluteJoint({
-      lowerAngle: -CONFIG.rider.maxJointAngleRad,
-      upperAngle: CONFIG.rider.maxJointAngleRad,
-      enableLimit: true,
-      enableMotor: true,
-      maxMotorTorque: CONFIG.rider.jointMaxTorque,
-      motorSpeed: 0
+      lowerAngle: -CONFIG.rider.maxJointAngleRad, upperAngle: CONFIG.rider.maxJointAngleRad,
+      enableLimit: true, enableMotor: true, maxMotorTorque: CONFIG.rider.jointMaxTorque, motorSpeed: 0
     }, chassis, riderBody, pl.Vec2(sx + CONFIG.rider.jointOffset.x, sy + CONFIG.rider.jointOffset.y)));
 
     const isBikePart = (u) => u === 'rearWheel' || u === 'frontWheel' || u === 'chassis' || u === 'fatal';
@@ -1613,90 +773,47 @@
     world.on('begin-contact', (contact) => {
       const fA = contact.getFixtureA(), fB = contact.getFixtureB();
       const uA = fA.getUserData(), uB = fB.getUserData();
+      if ((uA === 'fatal' && uB === 'terrain') || (uB === 'fatal' && uA === 'terrain')) { if (!crashed && !finished) pendingCrash = true; }
+      if ((uA === 'hazard' && isBikePart(uB)) || (uB === 'hazard' && isBikePart(uA))) { if (!crashed && !finished) pendingCrash = true; }
+      if ((uA === 'rearWheel' && isRideSurface(uB)) || (uB === 'rearWheel' && isRideSurface(uA))) { rearContacts++; spawnDust(rearWheel.getPosition(), CONFIG.visuals.dustLandingRear, 2.5); }
+      if ((uA === 'frontWheel' && isRideSurface(uB)) || (uB === 'frontWheel' && isRideSurface(uA))) { frontContacts++; spawnDust(frontWheel.getPosition(), CONFIG.visuals.dustLandingFront, 2.0); }
 
-      if ((uA === 'fatal' && uB === 'terrain') || (uB === 'fatal' && uA === 'terrain')) {
-        if (!crashed && !finished) pendingCrash = true;
-      }
-      if ((uA === 'hazard' && isBikePart(uB)) || (uB === 'hazard' && isBikePart(uA))) {
-        if (!crashed && !finished) pendingCrash = true;
-      }
+      const bPad = bounceByFixture.get(fA) || bounceByFixture.get(fB), bOther = bounceByFixture.has(fA) ? uB : uA;
+      if (bPad && isBikePart(bOther) && simTime - bPad.lastHit > 0.25 && !crashed && !finished) pendingBounce = bPad;
 
-      if ((uA === 'rearWheel' && isRideSurface(uB)) || (uB === 'rearWheel' && isRideSurface(uA))) {
-        rearContacts++;
-        spawnDust(rearWheel.getPosition(), CONFIG.visuals.dustLandingRear, 2.5);
-      }
-      if ((uA === 'frontWheel' && isRideSurface(uB)) || (uB === 'frontWheel' && isRideSurface(uA))) {
-        frontContacts++;
-        spawnDust(frontWheel.getPosition(), CONFIG.visuals.dustLandingFront, 2.0);
-      }
+      const bst = boostByFixture.get(fA) || boostByFixture.get(fB), bstOther = boostByFixture.has(fA) ? uB : uA;
+      if (bst && (bstOther === 'rearWheel' || bstOther === 'frontWheel')) activeBoostCounts.set(bst, (activeBoostCounts.get(bst) || 0) + 1);
 
-      const bPad = bounceByFixture.get(fA) || bounceByFixture.get(fB);
-      const otherU = bounceByFixture.has(fA) ? uB : uA;
-      if (bPad && isBikePart(otherU) && simTime - bPad.lastHit > 0.25 && !crashed && !finished) {
-        pendingBounce = bPad;
-      }
-
-      const bst = boostByFixture.get(fA) || boostByFixture.get(fB);
-      const bstOther = boostByFixture.has(fA) ? uB : uA;
-      if (bst && (bstOther === 'rearWheel' || bstOther === 'frontWheel')) {
-        activeBoostCounts.set(bst, (activeBoostCounts.get(bst) || 0) + 1);
-      }
-
-      const cr = crumbleByFixture.get(fA) || crumbleByFixture.get(fB);
-      const crOther = crumbleByFixture.has(fA) ? uB : uA;
-      if (cr && cr.state === 'idle' && (crOther === 'rearWheel' || crOther === 'frontWheel' || crOther === 'chassis')) {
-        cr.state = 'shaking';
-        cr.timer = 0;
-      }
+      const cr = crumbleByFixture.get(fA) || crumbleByFixture.get(fB), crOther = crumbleByFixture.has(fA) ? uB : uA;
+      if (cr && cr.state === 'idle' && (crOther === 'rearWheel' || crOther === 'frontWheel' || crOther === 'chassis')) { cr.state = 'shaking'; cr.timer = 0; }
     });
 
     world.on('end-contact', (contact) => {
       const fA = contact.getFixtureA(), fB = contact.getFixtureB();
       const uA = fA.getUserData(), uB = fB.getUserData();
-      if ((uA === 'rearWheel' && isRideSurface(uB)) || (uB === 'rearWheel' && isRideSurface(uA))) {
-        rearContacts = Math.max(0, rearContacts - 1);
-      }
-      if ((uA === 'frontWheel' && isRideSurface(uB)) || (uB === 'frontWheel' && isRideSurface(uA))) {
-        frontContacts = Math.max(0, frontContacts - 1);
-      }
-      const bst = boostByFixture.get(fA) || boostByFixture.get(fB);
-      const bstOther = boostByFixture.has(fA) ? uB : uA;
-      if (bst && (bstOther === 'rearWheel' || bstOther === 'frontWheel')) {
-        activeBoostCounts.set(bst, Math.max(0, (activeBoostCounts.get(bst) || 0) - 1));
-      }
+      if ((uA === 'rearWheel' && isRideSurface(uB)) || (uB === 'rearWheel' && isRideSurface(uA))) rearContacts = Math.max(0, rearContacts - 1);
+      if ((uA === 'frontWheel' && isRideSurface(uB)) || (uB === 'frontWheel' && isRideSurface(uA))) frontContacts = Math.max(0, frontContacts - 1);
+      const bst = boostByFixture.get(fA) || boostByFixture.get(fB), bstOther = boostByFixture.has(fA) ? uB : uA;
+      if (bst && (bstOther === 'rearWheel' || bstOther === 'frontWheel')) activeBoostCounts.set(bst, Math.max(0, (activeBoostCounts.get(bst) || 0) - 1));
     });
   }
 
   function applySuspensionLimits(wheel, restLocal, axisLocal) {
-    const restWorld = chassis.getWorldPoint(restLocal);
-    const axisWorld = chassis.getWorldVector(axisLocal);
-    const wPos = wheel.getPosition();
-
+    const restWorld = chassis.getWorldPoint(restLocal), axisWorld = chassis.getWorldVector(axisLocal), wPos = wheel.getPosition();
     const travel = (wPos.x - restWorld.x) * axisWorld.x + (wPos.y - restWorld.y) * axisWorld.y;
-
-    const cCenter = chassis.getWorldCenter();
-    const cVel = chassis.getLinearVelocity();
-    const cAng = chassis.getAngularVelocity();
+    const cCenter = chassis.getWorldCenter(), cVel = chassis.getLinearVelocity(), cAng = chassis.getAngularVelocity();
     const rx = wPos.x - cCenter.x, ry = wPos.y - cCenter.y;
-    const cVelAtW_x = cVel.x - cAng * ry;
-    const cVelAtW_y = cVel.y + cAng * rx;
     const wVel = wheel.getLinearVelocity();
-    const relVel = (wVel.x - cVelAtW_x) * axisWorld.x + (wVel.y - cVelAtW_y) * axisWorld.y;
+    const relVel = (wVel.x - (cVel.x - cAng * ry)) * axisWorld.x + (wVel.y - (cVel.y + cAng * rx)) * axisWorld.y;
 
     let forceMag = 0;
     if (travel < -CONFIG.suspension.maxExtend) {
-      const overshoot = travel + CONFIG.suspension.maxExtend;
-      forceMag = -overshoot * CONFIG.suspension.bumpStopStiffness - relVel * CONFIG.suspension.bumpStopDamping;
-      if (forceMag < 0) forceMag = 0;
+      forceMag = Math.max(0, -(travel + CONFIG.suspension.maxExtend) * CONFIG.suspension.bumpStopStiffness - relVel * CONFIG.suspension.bumpStopDamping);
     } else if (travel > CONFIG.suspension.maxCompress) {
-      const overshoot = travel - CONFIG.suspension.maxCompress;
-      forceMag = -overshoot * CONFIG.suspension.bumpStopStiffness - relVel * CONFIG.suspension.bumpStopDamping;
-      if (forceMag > 0) forceMag = 0;
+      forceMag = Math.min(0, -(travel - CONFIG.suspension.maxCompress) * CONFIG.suspension.bumpStopStiffness - relVel * CONFIG.suspension.bumpStopDamping);
     }
-
     if (forceMag !== 0) {
-      const fx = axisWorld.x * forceMag;
-      const fy = axisWorld.y * forceMag;
+      const fx = axisWorld.x * forceMag, fy = axisWorld.y * forceMag;
       wheel.applyForce(pl.Vec2(fx, fy), wPos, true);
       chassis.applyForce(pl.Vec2(-fx, -fy), wPos, true);
     }
@@ -1705,10 +822,7 @@
   function triggerCrash() {
     if (crashed || finished) return;
     crashed = true;
-    if (riderJoint) {
-      world.destroyJoint(riderJoint);
-      riderJoint = null;
-    }
+    if (riderJoint) { world.destroyJoint(riderJoint); riderJoint = null; }
     riderBody.applyLinearImpulse(pl.Vec2(0, CONFIG.rider.crashImpulseY), riderBody.getWorldCenter(), true);
     spawnDust(riderBody.getPosition(), CONFIG.visuals.dustCrashCount, 5.5);
     bannerTitle.textContent = 'BAILED';
@@ -1718,17 +832,11 @@
 
   function respawnCheckpoint() {
     if (finished) { advanceAfterFinish(); return; }
-    faults++;
-    particles = [];
-    buildWorld(activeTrack.checkpoints[currentCheckpoint]);
+    faults++; particles = []; buildWorld(activeTrack.checkpoints[currentCheckpoint]);
   }
 
   function resetFullRun() {
-    currentCheckpoint = 0;
-    faults = 0;
-    runTime = 0;
-    timerStarted = false;
-    particles = [];
+    currentCheckpoint = 0; faults = 0; runTime = 0; timerStarted = false; particles = [];
     buildWorld(activeTrack.checkpoints[0]);
     camX = activeTrack.checkpoints[0].x + CONFIG.camera.offsetX;
     camY = activeTrack.checkpoints[0].groundY + CONFIG.camera.offsetY;
@@ -1736,45 +844,20 @@
 
   function spawnDust(pos, count, speed) {
     for (let i = 0; i < count; i++) {
-      const a = Math.random() * Math.PI;
-      const s = (0.4 + Math.random() * 0.8) * speed;
-      particles.push({
-        x: pos.x + (Math.random() - 0.5) * 0.3,
-        y: pos.y - 0.25 + (Math.random() - 0.5) * 0.2,
-        vx: Math.cos(a) * s - 1.5,
-        vy: Math.sin(a) * s,
-        life: 0.35 + Math.random() * 0.45,
-        maxLife: 0.8,
-        size: 0.06 + Math.random() * 0.14,
-        rot: Math.random() * Math.PI * 2,
-        shade: 160 + ((Math.random() * 85) | 0)
-      });
+      const a = Math.random() * Math.PI, s = (0.4 + Math.random() * 0.8) * speed;
+      particles.push({ x: pos.x + (Math.random() - 0.5) * 0.3, y: pos.y - 0.25 + (Math.random() - 0.5) * 0.2, vx: Math.cos(a) * s - 1.5, vy: Math.sin(a) * s, life: 0.35 + Math.random() * 0.45, maxLife: 0.8, size: 0.06 + Math.random() * 0.14, rot: Math.random() * 6.28, shade: 160 + ((Math.random() * 85) | 0) });
     }
   }
 
   function spawnTechnicolorBurst(pos, baseHue) {
     for (let i = 0; i < CONFIG.multiplayer.crashBurstCount; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const s = 2.0 + Math.random() * 6.5;
-      particles.push({
-        x: pos.x,
-        y: pos.y,
-        vx: Math.cos(a) * s,
-        vy: Math.sin(a) * s + 2.5,
-        life: 0.45 + Math.random() * 0.55,
-        maxLife: 1.0,
-        size: 0.09 + Math.random() * 0.16,
-        rot: Math.random() * Math.PI * 2,
-        hue: (baseHue + Math.random() * 140 - 70 + 360) % 360
-      });
+      const a = Math.random() * Math.PI * 2, s = 2.0 + Math.random() * 6.5;
+      particles.push({ x: pos.x, y: pos.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s + 2.5, life: 0.45 + Math.random() * 0.55, maxLife: 1.0, size: 0.09 + Math.random() * 0.16, rot: Math.random() * 6.28, hue: (baseHue + Math.random() * 140 - 70 + 360) % 360 });
     }
   }
 
   // --- Physics Step ---
-  let accumulator = 0;
-  let lastTime = performance.now();
-  let lastRenderTime = lastTime;
-  let leanSmooth = 0;
+  let accumulator = 0, lastTime = performance.now(), lastRenderTime = lastTime, leanSmooth = 0;
 
   function stepPhysics(dt) {
     simTime += dt;
@@ -1782,30 +865,21 @@
     if (timerStarted && !crashed && !finished) runTime += dt;
 
     for (const m of movers) {
-      const c = m.cfg;
-      const theta = simTime * c.speed + (c.phase || 0);
-      const targetX = c.x + (c.ampX || 0) * Math.sin(theta);
-      const targetY = c.y + (c.ampY || 0) * Math.sin(theta);
-      const p = m.body.getPosition();
-      m.body.setLinearVelocity(pl.Vec2((targetX - p.x) / dt, (targetY - p.y) / dt));
+      const c = m.cfg, th = simTime * c.speed + (c.phase || 0), p = m.body.getPosition();
+      m.body.setLinearVelocity(pl.Vec2(((c.x + (c.ampX || 0) * Math.sin(th)) - p.x) / dt, ((c.y + (c.ampY || 0) * Math.sin(th)) - p.y) / dt));
     }
 
     for (const pen of pendulums) {
-      const c = pen.cfg;
-      const theta = c.amp * Math.sin(simTime * c.speed + (c.phase || 0));
-      const targetX = c.x + c.len * Math.sin(theta);
-      const targetY = c.y - c.len * Math.cos(theta);
-      const p = pen.body.getPosition();
-      pen.body.setLinearVelocity(pl.Vec2((targetX - p.x) / dt, (targetY - p.y) / dt));
-      pen.body.setAngularVelocity((theta - pen.body.getAngle()) / dt);
+      const c = pen.cfg, th = c.amp * Math.sin(simTime * c.speed + (c.phase || 0)), p = pen.body.getPosition();
+      pen.body.setLinearVelocity(pl.Vec2(((c.x + c.len * Math.sin(th)) - p.x) / dt, ((c.y - c.len * Math.cos(th)) - p.y) / dt));
+      pen.body.setAngularVelocity((th - pen.body.getAngle()) / dt);
     }
 
     for (const cr of crumbles) {
       if (cr.state === 'shaking') {
         cr.timer += dt;
         if (cr.timer >= cr.delay) {
-          cr.state = 'falling';
-          cr.vy = -4.0;
+          cr.state = 'falling'; cr.vy = -4.0;
           cr.body.setAngularVelocity((Math.random() - 0.5) * 1.4);
           spawnDust({ x: cr.x, y: cr.y }, 10, 3.5);
         }
@@ -1813,91 +887,52 @@
         if (cr.body.getPosition().y > -20) {
           cr.vy = Math.max(-18, cr.vy - 18 * dt);
           cr.body.setLinearVelocity(pl.Vec2(0, cr.vy));
-        } else {
-          cr.body.setLinearVelocity(pl.Vec2(0, 0));
-          cr.body.setAngularVelocity(0);
-        }
+        } else { cr.body.setLinearVelocity(pl.Vec2(0, 0)); cr.body.setAngularVelocity(0); }
       }
     }
 
-    for (const s of seesaws) {
-      s.body.applyTorque(-s.body.getAngle() * CONFIG.physics.seesawReturnSpring, true);
-    }
-
-    for (const bp of bouncePads) {
-      if (bp.flash > 0) bp.flash = Math.max(0, bp.flash - dt * 3);
-    }
+    for (const s of seesaws) s.body.applyTorque(-s.body.getAngle() * CONFIG.physics.seesawReturnSpring, true);
+    for (const bp of bouncePads) if (bp.flash > 0) bp.flash = Math.max(0, bp.flash - dt * 3);
 
     if (!crashed && !finished) {
-      const cVel = chassis.getLinearVelocity();
-      const speed = cVel.length();
-
+      const cVel = chassis.getLinearVelocity(), speed = cVel.length();
       if (keys.brake) {
         if (cVel.x > CONFIG.drivetrain.reverseEngageSpeed || rearWheel.getAngularVelocity() < -1.8) {
-          rearJoint.setMaxMotorTorque(CONFIG.drivetrain.brakeRearTorque);
-          rearJoint.setMotorSpeed(0);
-          frontJoint.setMaxMotorTorque(CONFIG.drivetrain.brakeFrontTorque);
-          frontJoint.setMotorSpeed(0);
+          rearJoint.setMaxMotorTorque(CONFIG.drivetrain.brakeRearTorque); rearJoint.setMotorSpeed(0);
+          frontJoint.setMaxMotorTorque(CONFIG.drivetrain.brakeFrontTorque); frontJoint.setMotorSpeed(0);
         } else {
-          rearJoint.setMaxMotorTorque(CONFIG.drivetrain.reverseMaxTorque);
-          rearJoint.setMotorSpeed(CONFIG.drivetrain.reverseMotorSpeed);
-          frontJoint.setMaxMotorTorque(CONFIG.drivetrain.coastFrontDrag);
-          frontJoint.setMotorSpeed(0);
+          rearJoint.setMaxMotorTorque(CONFIG.drivetrain.reverseMaxTorque); rearJoint.setMotorSpeed(CONFIG.drivetrain.reverseMotorSpeed);
+          frontJoint.setMaxMotorTorque(CONFIG.drivetrain.coastFrontDrag); frontJoint.setMotorSpeed(0);
         }
       } else if (keys.gas) {
-        rearJoint.setMaxMotorTorque(CONFIG.drivetrain.gasMaxTorque);
-        rearJoint.setMotorSpeed(CONFIG.drivetrain.gasMotorSpeed);
-        frontJoint.setMaxMotorTorque(CONFIG.drivetrain.frontFreewheelDrag);
-        frontJoint.setMotorSpeed(0);
-        if (rearContacts > 0 && Math.random() < CONFIG.visuals.dustGasChance) {
-          spawnDust({ x: rearWheel.getPosition().x - 0.2, y: rearWheel.getPosition().y }, 1, 2.2);
-        }
+        rearJoint.setMaxMotorTorque(CONFIG.drivetrain.gasMaxTorque); rearJoint.setMotorSpeed(CONFIG.drivetrain.gasMotorSpeed);
+        frontJoint.setMaxMotorTorque(CONFIG.drivetrain.frontFreewheelDrag); frontJoint.setMotorSpeed(0);
+        if (rearContacts > 0 && Math.random() < CONFIG.visuals.dustGasChance) spawnDust({ x: rearWheel.getPosition().x - 0.2, y: rearWheel.getPosition().y }, 1, 2.2);
       } else {
-        rearJoint.setMaxMotorTorque(CONFIG.drivetrain.coastRearDrag);
-        rearJoint.setMotorSpeed(0);
-        frontJoint.setMaxMotorTorque(CONFIG.drivetrain.coastFrontDrag);
-        frontJoint.setMotorSpeed(0);
+        rearJoint.setMaxMotorTorque(CONFIG.drivetrain.coastRearDrag); rearJoint.setMotorSpeed(0);
+        frontJoint.setMaxMotorTorque(CONFIG.drivetrain.coastFrontDrag); frontJoint.setMotorSpeed(0);
       }
 
       for (const [bst, count] of activeBoostCounts) {
         if (count > 0) {
           const ang = bst.angle || 0;
-          const fx = Math.cos(ang) * bst.thrust;
-          const fy = Math.sin(ang) * bst.thrust;
-          chassis.applyForce(pl.Vec2(fx, fy), chassis.getWorldCenter(), true);
-          rearJoint.setMaxMotorTorque(CONFIG.drivetrain.gasMaxTorque * 1.3);
-          rearJoint.setMotorSpeed(-60);
-          if (Math.random() < 0.65) {
-            spawnDust({ x: rearWheel.getPosition().x, y: rearWheel.getPosition().y }, 1, 4.0);
-          }
+          chassis.applyForce(pl.Vec2(Math.cos(ang) * bst.thrust, Math.sin(ang) * bst.thrust), chassis.getWorldCenter(), true);
+          rearJoint.setMaxMotorTorque(CONFIG.drivetrain.gasMaxTorque * 1.3); rearJoint.setMotorSpeed(-60);
+          if (Math.random() < 0.65) spawnDust({ x: rearWheel.getPosition().x, y: rearWheel.getPosition().y }, 1, 4.0);
         }
       }
 
-      const rawLean = (keys.back ? 1 : 0) - (keys.fwd ? 1 : 0);
-      const prevLean = leanSmooth;
+      const rawLean = (keys.back ? 1 : 0) - (keys.fwd ? 1 : 0), prevLean = leanSmooth;
       leanSmooth += (rawLean - leanSmooth) * CONFIG.handling.leanSmoothing * dt;
-
       if (riderJoint) {
-        const targetAngle = leanSmooth * CONFIG.handling.riderTargetLeanRad;
-        const err = targetAngle - riderJoint.getJointAngle();
-        const spd = Math.max(
-          -CONFIG.handling.riderJointMaxSpeed,
-          Math.min(CONFIG.handling.riderJointMaxSpeed, err * CONFIG.handling.riderJointGain)
-        );
-        riderJoint.setMotorSpeed(spd);
+        const err = leanSmooth * CONFIG.handling.riderTargetLeanRad - riderJoint.getJointAngle();
+        riderJoint.setMotorSpeed(Math.max(-CONFIG.handling.riderJointMaxSpeed, Math.min(CONFIG.handling.riderJointMaxSpeed, err * CONFIG.handling.riderJointGain)));
       }
 
       const grounded = (rearContacts > 0 || frontContacts > 0);
       let pitchTorque = grounded ? CONFIG.handling.pitchTorqueGrounded : CONFIG.handling.pitchTorqueAir;
-      if (keys.back && rearContacts > 0 && speed < 2.5) {
-        pitchTorque += CONFIG.handling.stationaryWheelieBoost;
-      }
-
-      if (rawLean !== 0) {
-        chassis.applyTorque(rawLean * pitchTorque, true);
-      } else {
-        chassis.applyTorque(-chassis.getAngularVelocity() * CONFIG.handling.neutralAngularDamping, true);
-      }
+      if (keys.back && rearContacts > 0 && speed < 2.5) pitchTorque += CONFIG.handling.stationaryWheelieBoost;
+      chassis.applyTorque(rawLean !== 0 ? rawLean * pitchTorque : -chassis.getAngularVelocity() * CONFIG.handling.neutralAngularDamping, true);
 
       if (grounded && Math.abs(rawLean - prevLean) > CONFIG.handling.pumpSensitivity) {
         chassis.applyLinearImpulse(pl.Vec2(0, CONFIG.handling.pumpImpulseY), chassis.getWorldCenter(), true);
@@ -1906,29 +941,16 @@
       if (keys.back && frontContacts > 0 && speed < CONFIG.handling.unpinchSpeedThreshold) {
         unpinchTimer += dt;
         if (unpinchTimer >= CONFIG.handling.unpinchDelay) {
-          const fwPos = frontWheel.getPosition();
-          const pullDir = keys.gas ? 1 : -1;
-          frontWheel.applyForce(
-            pl.Vec2(pullDir * CONFIG.handling.unpinchPullForce, CONFIG.handling.unpinchLiftForce),
-            fwPos,
-            true
-          );
-          chassis.applyForce(
-            pl.Vec2(pullDir * CONFIG.handling.unpinchPullForce * 0.4, CONFIG.handling.unpinchLiftForce * 0.4),
-            fwPos,
-            true
-          );
+          const fwPos = frontWheel.getPosition(), pullDir = keys.gas ? 1 : -1;
+          frontWheel.applyForce(pl.Vec2(pullDir * CONFIG.handling.unpinchPullForce, CONFIG.handling.unpinchLiftForce), fwPos, true);
+          chassis.applyForce(pl.Vec2(pullDir * CONFIG.handling.unpinchPullForce * 0.4, CONFIG.handling.unpinchLiftForce * 0.4), fwPos, true);
         }
-      } else {
-        unpinchTimer = 0;
-      }
+      } else { unpinchTimer = 0; }
 
       applySuspensionLimits(rearWheel, rearRestLocal, rearAxisUnit);
       applySuspensionLimits(frontWheel, frontRestLocal, frontAxisUnit);
 
-      if (chassis.getPosition().y < CONFIG.physics.killFloorY) {
-        pendingCrash = true;
-      }
+      if (chassis.getPosition().y < CONFIG.physics.killFloorY) pendingCrash = true;
 
       const bx = chassis.getPosition().x;
       for (let i = currentCheckpoint + 1; i < activeTrack.checkpoints.length; i++) {
@@ -1948,10 +970,7 @@
     world.step(dt, CONFIG.physics.velocityIterations, CONFIG.physics.positionIterations);
 
     if (pendingBounce && !crashed && !finished) {
-      const pad = pendingBounce;
-      pendingBounce = null;
-      pad.lastHit = simTime;
-      pad.flash = 1.0;
+      const pad = pendingBounce; pendingBounce = null; pad.lastHit = simTime; pad.flash = 1.0;
       for (const body of [chassis, rearWheel, frontWheel, riderBody]) {
         const v = body.getLinearVelocity();
         body.setLinearVelocity(pl.Vec2(v.x * 0.65 + pad.ix, Math.max(0, v.y * 0.15) + pad.iy));
@@ -1959,31 +978,20 @@
       spawnDust({ x: pad.x, y: pad.y + 0.3 }, 14, 5.5);
     }
 
-    if (pendingCrash) {
-      pendingCrash = false;
-      triggerCrash();
-    }
+    if (pendingCrash) { pendingCrash = false; triggerCrash(); }
 
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.vy -= CONFIG.visuals.dustGravity * dt;
-      p.life -= dt;
+      p.x += p.vx * dt; p.y += p.vy * dt; p.vy -= CONFIG.visuals.dustGravity * dt; p.life -= dt;
       if (p.life <= 0) particles.splice(i, 1);
     }
   }
 
   function solveIK(ax, ay, bx, by, L1, L2, flipSign) {
-    const dx = bx - ax, dy = by - ay;
-    const d = Math.min(Math.max(Math.hypot(dx, dy), 0.001), (L1 + L2) * 0.995);
-    const baseAngle = Math.atan2(dy, dx);
-    const cosA = (L1 * L1 + d * d - L2 * L2) / (2 * L1 * d);
+    const dx = bx - ax, dy = by - ay, d = Math.min(Math.max(Math.hypot(dx, dy), 0.001), (L1 + L2) * 0.995);
+    const baseAngle = Math.atan2(dy, dx), cosA = (L1 * L1 + d * d - L2 * L2) / (2 * L1 * d);
     const bend = Math.acos(Math.max(-1, Math.min(1, cosA))) * flipSign;
-    return {
-      x: ax + Math.cos(baseAngle + bend) * L1,
-      y: ay + Math.sin(baseAngle + bend) * L1
-    };
+    return { x: ax + Math.cos(baseAngle + bend) * L1, y: ay + Math.sin(baseAngle + bend) * L1 };
   }
 
   function localToWorld(px, py, ang, lx, ly) {
@@ -2002,21 +1010,14 @@
   function render(now) {
     const renderDt = Math.min((now - lastRenderTime) / 1000, 0.05);
     lastRenderTime = now;
-
-    const P = CONFIG.palette;
-    const C = CONFIG.camera;
+    const P = CONFIG.palette, C = CONFIG.camera;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     const bgGrad = ctx.createLinearGradient(0, 0, 0, viewH);
-    bgGrad.addColorStop(0, P.skyTop);
-    bgGrad.addColorStop(0.6, P.skyMid);
-    bgGrad.addColorStop(1, P.skyBottom);
-    ctx.fillStyle = bgGrad;
-    ctx.fillRect(0, 0, viewW, viewH);
+    bgGrad.addColorStop(0, P.skyTop); bgGrad.addColorStop(0.6, P.skyMid); bgGrad.addColorStop(1, P.skyBottom);
+    ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, viewW, viewH);
 
-    const pos = chassis.getPosition();
-    const vel = chassis.getLinearVelocity();
-    const speed = vel.length();
+    const pos = chassis.getPosition(), vel = chassis.getLinearVelocity(), speed = vel.length();
     const targetZoom = Math.max(C.minZoom, Math.min(C.maxZoom, C.baseZoom - speed * C.speedZoomOut));
     camZoom += (targetZoom - camZoom) * C.zoomLerp;
     camX += (pos.x + vel.x * C.lookAheadX + C.offsetX - camX) * C.lerpX;
@@ -2040,36 +1041,23 @@
 
     ctx.restore();
 
-    if (grainPattern) {
-      ctx.fillStyle = grainPattern;
-      ctx.fillRect(0, 0, viewW, viewH);
-    }
-
+    if (grainPattern) { ctx.fillStyle = grainPattern; ctx.fillRect(0, 0, viewW, viewH); }
     uiTime.textContent = formatTime(runTime);
     uiFaults.textContent = faults;
     uiSpeed.textContent = Math.round(speed * 3.6);
   }
 
   function drawGhosts(now, dt) {
-    const M = CONFIG.multiplayer;
-    const alphaLerp = 1 - Math.exp(-M.interpSpeed * dt);
-
+    const M = CONFIG.multiplayer, alphaLerp = 1 - Math.exp(-M.interpSpeed * dt);
     for (const [id, g] of ghosts) {
-      if (now - g.lastSeen > M.ghostTimeoutMs) {
-        ghosts.delete(id);
-        continue;
-      }
+      if (now - g.lastSeen > M.ghostTimeoutMs) { ghosts.delete(id); continue; }
       if (g.trackIdx !== currentTrackIdx) continue;
 
       for (let i = 0; i < 12; i++) {
-        if (i === 2 || i === 5 || i === 8 || i === 11) {
-          g.cur[i] = lerpAngle(g.cur[i], g.target[i], alphaLerp);
-        } else {
-          g.cur[i] += (g.target[i] - g.cur[i]) * alphaLerp;
-        }
+        g.cur[i] = (i === 2 || i === 5 || i === 8 || i === 11) ? lerpAngle(g.cur[i], g.target[i], alphaLerp) : g.cur[i] + (g.target[i] - g.cur[i]) * alphaLerp;
       }
 
-      const cx = g.cur[0],  cy = g.cur[1],  ca = g.cur[2];
+      const cx = g.cur[0], cy = g.cur[1], ca = g.cur[2];
       const rwx = g.cur[3], rwy = g.cur[4], rwa = g.cur[5];
       const fwx = g.cur[6], fwy = g.cur[7], fwa = g.cur[8];
       const rdx = g.cur[9], rdy = g.cur[10], rda = g.cur[11];
@@ -2082,52 +1070,36 @@
       }
 
       if (g.trail.length > 1) {
-        ctx.save();
-        ctx.globalCompositeOperation = 'lighter';
-        ctx.lineCap = 'round';
+        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
         const ribbons = [
-          { kx: 'hx',  ky: 'hy',  hueShift: 0,                    wMul: 1.1 },
-          { kx: 'fwx', ky: 'fwy', hueShift: M.chromaticShiftDeg,  wMul: 0.9 },
+          { kx: 'hx', ky: 'hy', hueShift: 0, wMul: 1.1 },
+          { kx: 'fwx', ky: 'fwy', hueShift: M.chromaticShiftDeg, wMul: 0.9 },
           { kx: 'rwx', ky: 'rwy', hueShift: -M.chromaticShiftDeg, wMul: 0.9 }
         ];
         for (const r of ribbons) {
           for (let i = 1; i < g.trail.length; i++) {
-            const p0 = g.trail[i - 1];
-            const p1 = g.trail[i];
-            const t = i / g.trail.length;
+            const p0 = g.trail[i - 1], p1 = g.trail[i], t = i / g.trail.length;
             const segHue = (g.hue + r.hueShift + i * 4 + 360) % 360;
-
             ctx.strokeStyle = `hsla(${segHue}, 100%, 60%, ${t * 0.20})`;
             ctx.lineWidth = M.tracerWidth * 2.1 * t * r.wMul;
-            ctx.beginPath();
-            ctx.moveTo(p0[r.kx], p0[r.ky]);
-            ctx.lineTo(p1[r.kx], p1[r.ky]);
-            ctx.stroke();
-
+            ctx.beginPath(); ctx.moveTo(p0[r.kx], p0[r.ky]); ctx.lineTo(p1[r.kx], p1[r.ky]); ctx.stroke();
             ctx.strokeStyle = `hsla(${segHue}, 100%, 76%, ${t * 0.72})`;
             ctx.lineWidth = M.tracerWidth * 0.55 * t * r.wMul;
-            ctx.beginPath();
-            ctx.moveTo(p0[r.kx], p0[r.ky]);
-            ctx.lineTo(p1[r.kx], p1[r.ky]);
-            ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(p0[r.kx], p0[r.ky]); ctx.lineTo(p1[r.kx], p1[r.ky]); ctx.stroke();
           }
         }
         ctx.restore();
       }
 
-      const fillCol   = `hsla(${g.hue}, 100%, 58%, ${M.ghostFillAlpha})`;
+      const fillCol = `hsla(${g.hue}, 100%, 58%, ${M.ghostFillAlpha})`;
       const strokeCol = `hsla(${g.hue}, 100%, 75%, ${M.ghostStrokeAlpha})`;
       const accentCol = `hsla(${(g.hue + 45) % 360}, 100%, 72%, 0.85)`;
       const rad = CONFIG.bike.wheelRadius;
 
       for (const [wx, wy, wa] of [[rwx, rwy, rwa], [fwx, fwy, fwa]]) {
-        ctx.save();
-        ctx.translate(wx, wy);
-        ctx.rotate(wa);
-        ctx.fillStyle = fillCol;
-        ctx.beginPath(); ctx.arc(0, 0, rad, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = strokeCol;
-        ctx.lineWidth = 0.055;
+        ctx.save(); ctx.translate(wx, wy); ctx.rotate(wa);
+        ctx.fillStyle = fillCol; ctx.beginPath(); ctx.arc(0, 0, rad, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = strokeCol; ctx.lineWidth = 0.055;
         ctx.beginPath(); ctx.arc(0, 0, rad * 0.88, 0, Math.PI * 2); ctx.stroke();
         ctx.beginPath();
         for (let i = 0; i < 3; i++) {
@@ -2135,78 +1107,39 @@
           ctx.moveTo(Math.cos(a) * -rad * 0.72, Math.sin(a) * -rad * 0.72);
           ctx.lineTo(Math.cos(a) * rad * 0.72, Math.sin(a) * rad * 0.72);
         }
-        ctx.stroke();
-        ctx.restore();
+        ctx.stroke(); ctx.restore();
       }
 
-      const pivotRear = localToWorld(cx, cy, ca, -0.32, -0.02);
-      const forkCrown = localToWorld(cx, cy, ca, 0.56, 0.34);
-      ctx.strokeStyle = strokeCol;
-      ctx.lineWidth = 0.075;
-      ctx.beginPath();
-      ctx.moveTo(pivotRear.x, pivotRear.y); ctx.lineTo(rwx, rwy);
-      ctx.moveTo(forkCrown.x, forkCrown.y); ctx.lineTo(fwx, fwy);
-      ctx.stroke();
+      const pivotRear = localToWorld(cx, cy, ca, -0.32, -0.02), forkCrown = localToWorld(cx, cy, ca, 0.56, 0.34);
+      ctx.strokeStyle = strokeCol; ctx.lineWidth = 0.075;
+      ctx.beginPath(); ctx.moveTo(pivotRear.x, pivotRear.y); ctx.lineTo(rwx, rwy); ctx.moveTo(forkCrown.x, forkCrown.y); ctx.lineTo(fwx, fwy); ctx.stroke();
 
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(ca);
-      ctx.fillStyle = fillCol;
-      ctx.strokeStyle = strokeCol;
-      ctx.lineWidth = 0.04;
-      ctx.beginPath();
-      ctx.moveTo(-0.88, 0.28); ctx.lineTo(-0.25, 0.26); ctx.lineTo(0.18, 0.36);
-      ctx.lineTo(0.58, 0.44); ctx.lineTo(0.95, 0.22); ctx.lineTo(0.56, 0.30);
-      ctx.lineTo(0.15, 0.22); ctx.lineTo(-0.40, 0.14);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(ca);
+      ctx.fillStyle = fillCol; ctx.strokeStyle = strokeCol; ctx.lineWidth = 0.04;
+      ctx.beginPath(); ctx.moveTo(-0.88, 0.28); ctx.lineTo(-0.25, 0.26); ctx.lineTo(0.18, 0.36); ctx.lineTo(0.58, 0.44); ctx.lineTo(0.95, 0.22); ctx.lineTo(0.56, 0.30); ctx.lineTo(0.15, 0.22); ctx.lineTo(-0.40, 0.14); ctx.closePath();
+      ctx.fill(); ctx.stroke(); ctx.restore();
 
-      const footPeg = localToWorld(cx, cy, ca, -0.18, -0.02);
-      const grip = localToWorld(cx, cy, ca, 0.40, 0.57);
-      const hip = localToWorld(rdx, rdy, rda, -0.04, -0.34);
-      const shoulder = localToWorld(rdx, rdy, rda, 0.06, 0.24);
+      const footPeg = localToWorld(cx, cy, ca, -0.18, -0.02), grip = localToWorld(cx, cy, ca, 0.40, 0.57);
+      const hip = localToWorld(rdx, rdy, rda, -0.04, -0.34), shoulder = localToWorld(rdx, rdy, rda, 0.06, 0.24);
       const knee = solveIK(hip.x, hip.y, footPeg.x, footPeg.y, 0.38, 0.38, -1);
       const elbow = solveIK(shoulder.x, shoulder.y, grip.x, grip.y, 0.32, 0.32, 1);
 
-      ctx.strokeStyle = strokeCol;
-      ctx.lineWidth = 0.11;
-      ctx.beginPath();
-      ctx.moveTo(hip.x, hip.y); ctx.lineTo(knee.x, knee.y); ctx.lineTo(footPeg.x, footPeg.y);
-      ctx.stroke();
+      ctx.strokeStyle = strokeCol; ctx.lineWidth = 0.11;
+      ctx.beginPath(); ctx.moveTo(hip.x, hip.y); ctx.lineTo(knee.x, knee.y); ctx.lineTo(footPeg.x, footPeg.y); ctx.stroke();
 
-      ctx.save();
-      ctx.translate(rdx, rdy);
-      ctx.rotate(rda);
-      ctx.fillStyle = fillCol;
-      ctx.strokeStyle = strokeCol;
-      ctx.lineWidth = 0.04;
-      ctx.beginPath();
-      ctx.moveTo(-0.14, -0.36); ctx.lineTo(0.12, -0.36);
-      ctx.lineTo(0.18, 0.28); ctx.lineTo(-0.14, 0.28);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
+      ctx.save(); ctx.translate(rdx, rdy); ctx.rotate(rda);
+      ctx.fillStyle = fillCol; ctx.strokeStyle = strokeCol; ctx.lineWidth = 0.04;
+      ctx.beginPath(); ctx.moveTo(-0.14, -0.36); ctx.lineTo(0.12, -0.36); ctx.lineTo(0.18, 0.28); ctx.lineTo(-0.14, 0.28); ctx.closePath();
+      ctx.fill(); ctx.stroke(); ctx.restore();
 
-      ctx.strokeStyle = accentCol;
-      ctx.lineWidth = 0.085;
-      ctx.beginPath();
-      ctx.moveTo(shoulder.x, shoulder.y); ctx.lineTo(elbow.x, elbow.y); ctx.lineTo(grip.x, grip.y);
-      ctx.stroke();
+      ctx.strokeStyle = accentCol; ctx.lineWidth = 0.085;
+      ctx.beginPath(); ctx.moveTo(shoulder.x, shoulder.y); ctx.lineTo(elbow.x, elbow.y); ctx.lineTo(grip.x, grip.y); ctx.stroke();
 
-      ctx.save();
-      ctx.translate(headPos.x, headPos.y);
-      ctx.rotate(rda);
-      ctx.fillStyle = fillCol;
-      ctx.strokeStyle = strokeCol;
-      ctx.lineWidth = 0.045;
+      ctx.save(); ctx.translate(headPos.x, headPos.y); ctx.rotate(rda);
+      ctx.fillStyle = fillCol; ctx.strokeStyle = strokeCol; ctx.lineWidth = 0.045;
       ctx.beginPath(); ctx.arc(0, 0, 0.21, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       ctx.fillStyle = accentCol;
-      ctx.beginPath();
-      ctx.moveTo(0.02, 0.14); ctx.lineTo(0.30, 0.11); ctx.lineTo(0.18, 0.20);
-      ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(0.02, 0.14); ctx.lineTo(0.30, 0.11); ctx.lineTo(0.18, 0.20); ctx.closePath(); ctx.fill();
       ctx.restore();
     }
   }
@@ -2214,51 +1147,24 @@
   function drawSkyline() {
     const P = CONFIG.palette;
     for (let layer = 0; layer < 2; layer++) {
-      const parallax = layer === 0 ? 0.18 : 0.42;
-      const baseY = viewH * (layer === 0 ? 0.78 : 0.86);
-      const fill = layer === 0 ? P.skylineFarFill : P.skylineMidFill;
-      const edge = layer === 0 ? P.skylineFarEdge : P.skylineMidEdge;
-
+      const parallax = layer === 0 ? 0.18 : 0.42, baseY = viewH * (layer === 0 ? 0.78 : 0.86);
+      const fill = layer === 0 ? P.skylineFarFill : P.skylineMidFill, edge = layer === 0 ? P.skylineFarEdge : P.skylineMidEdge;
       for (const b of SKYLINE) {
         if (b.layer !== layer) continue;
         const sx = (b.x - camX * parallax) * (layer === 0 ? 10 : 16) + viewW * 0.5;
-        const w = b.w * (layer === 0 ? 11 : 16);
-        const h = b.h * (layer === 0 ? 11 : 16);
+        const w = b.w * (layer === 0 ? 11 : 16), h = b.h * (layer === 0 ? 11 : 16);
         if (sx + w < -60 || sx > viewW + 60) continue;
-
         ctx.fillStyle = fill;
-        ctx.beginPath();
-        ctx.moveTo(sx, viewH);
-        ctx.lineTo(sx, baseY - h);
-        ctx.lineTo(sx + w, baseY - h + b.slant * 14);
-        ctx.lineTo(sx + w, viewH);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.strokeStyle = edge;
-        ctx.lineWidth = 1.2;
-        ctx.beginPath();
-        ctx.moveTo(sx, baseY - h);
-        ctx.lineTo(sx + w, baseY - h + b.slant * 14);
-        ctx.stroke();
-
+        ctx.beginPath(); ctx.moveTo(sx, viewH); ctx.lineTo(sx, baseY - h); ctx.lineTo(sx + w, baseY - h + b.slant * 14); ctx.lineTo(sx + w, viewH); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = edge; ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.moveTo(sx, baseY - h); ctx.lineTo(sx + w, baseY - h + b.slant * 14); ctx.stroke();
         if (layer === 1 && b.hasTag) {
-          ctx.save();
-          ctx.translate(sx + w * 0.25, baseY - h * 0.55);
-          ctx.rotate(-0.18);
-          ctx.fillStyle = 'rgba(240, 240, 245, 0.07)';
-          ctx.fillRect(0, 0, w * 0.55, 6);
-          ctx.fillRect(8, 12, w * 0.35, 3);
-          ctx.restore();
+          ctx.save(); ctx.translate(sx + w * 0.25, baseY - h * 0.55); ctx.rotate(-0.18);
+          ctx.fillStyle = 'rgba(240, 240, 245, 0.07)'; ctx.fillRect(0, 0, w * 0.55, 6); ctx.fillRect(8, 12, w * 0.35, 3); ctx.restore();
         }
         if (layer === 1 && b.hasTruss) {
-          ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          for (let y = baseY - h + 20; y < viewH; y += 34) {
-            ctx.moveTo(sx + 6, y);
-            ctx.lineTo(sx + w - 6, y + 26);
-          }
+          ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 1; ctx.beginPath();
+          for (let y = baseY - h + 20; y < viewH; y += 34) { ctx.moveTo(sx + 6, y); ctx.lineTo(sx + w - 6, y + 26); }
           ctx.stroke();
         }
       }
@@ -2266,87 +1172,44 @@
   }
 
   function drawTrack() {
-    const P = CONFIG.palette;
-    const verts = activeTrack.verts;
-    const maxTrackX = verts[verts.length - 1][0] + 20;
-
+    const P = CONFIG.palette, verts = activeTrack.verts, maxTrackX = verts[verts.length - 1][0] + 20;
     ctx.fillStyle = P.trackFill;
-    ctx.beginPath();
-    ctx.moveTo(verts[0][0], -45);
+    ctx.beginPath(); ctx.moveTo(verts[0][0], -45);
     for (const [x, y] of verts) ctx.lineTo(x, y);
-    ctx.lineTo(verts[verts.length - 1][0], -45);
-    ctx.closePath();
-    ctx.fill();
+    ctx.lineTo(verts[verts.length - 1][0], -45); ctx.closePath(); ctx.fill();
 
-    ctx.save();
-    ctx.clip();
-    ctx.strokeStyle = P.trackHatch;
-    ctx.lineWidth = 0.08;
-    ctx.beginPath();
-    for (let x = -25; x < maxTrackX; x += 2.2) {
-      ctx.moveTo(x, -30);
-      ctx.lineTo(x + 14, 18);
-    }
+    ctx.save(); ctx.clip();
+    ctx.strokeStyle = P.trackHatch; ctx.lineWidth = 0.08; ctx.beginPath();
+    for (let x = -25; x < maxTrackX; x += 2.2) { ctx.moveTo(x, -30); ctx.lineTo(x + 14, 18); }
     ctx.stroke();
 
     for (const tag of activeTrack.tags) {
-      ctx.save();
-      ctx.translate(tag.x, tag.y);
-      ctx.scale(1, -1);
-      ctx.rotate(-tag.rot);
+      ctx.save(); ctx.translate(tag.x, tag.y); ctx.scale(1, -1); ctx.rotate(-tag.rot);
       const grad = ctx.createRadialGradient(0, 0, 0.1, 0, 0, 2.5 * tag.scale);
-      grad.addColorStop(0, 'rgba(245,245,250,0.14)');
-      grad.addColorStop(1, 'rgba(245,245,250,0)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(-3 * tag.scale, -2 * tag.scale, 6 * tag.scale, 4 * tag.scale);
-
+      grad.addColorStop(0, 'rgba(245,245,250,0.14)'); grad.addColorStop(1, 'rgba(245,245,250,0)');
+      ctx.fillStyle = grad; ctx.fillRect(-3 * tag.scale, -2 * tag.scale, 6 * tag.scale, 4 * tag.scale);
       ctx.font = `900 ${1.15 * tag.scale}px Impact, Arial Narrow, sans-serif`;
-      ctx.fillStyle = 'rgba(235, 235, 240, 0.24)';
-      ctx.fillText(tag.text, -1.6 * tag.scale, 0.4 * tag.scale);
+      ctx.fillStyle = 'rgba(235, 235, 240, 0.24)'; ctx.fillText(tag.text, -1.6 * tag.scale, 0.4 * tag.scale);
       ctx.restore();
     }
     ctx.restore();
 
-    ctx.strokeStyle = P.trackBevel;
-    ctx.lineWidth = 0.28;
-    ctx.lineCap = 'butt';
-    ctx.beginPath();
-    for (let i = 0; i < verts.length; i++) {
-      const [x, y] = verts[i];
-      if (i === 0) ctx.moveTo(x, y - 0.14);
-      else ctx.lineTo(x, y - 0.14);
-    }
-    ctx.stroke();
-
-    ctx.strokeStyle = P.trackRim;
-    ctx.lineWidth = 0.065;
-    ctx.beginPath();
-    for (let i = 0; i < verts.length; i++) {
-      const [x, y] = verts[i];
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
+    ctx.strokeStyle = P.trackBevel; ctx.lineWidth = 0.28; ctx.lineCap = 'butt'; ctx.beginPath();
+    verts.forEach(([x, y], i) => i ? ctx.lineTo(x, y - 0.14) : ctx.moveTo(x, y - 0.14)); ctx.stroke();
+    ctx.strokeStyle = P.trackRim; ctx.lineWidth = 0.065; ctx.beginPath();
+    verts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke();
   }
 
   function drawHazards() {
     for (const hz of (activeTrack.hazards || [])) {
-      const w = hz.x1 - hz.x0;
       ctx.save();
-      ctx.fillStyle = '#202026';
-      ctx.fillRect(hz.x0, hz.y, w, 0.14);
-      const step = 0.65;
-      ctx.fillStyle = '#e5e5ec';
-      ctx.beginPath();
-      for (let x = hz.x0; x < hz.x1 - 0.1; x += step) {
-        const sw = Math.min(step, hz.x1 - x);
-        ctx.moveTo(x, hz.y + 0.10);
-        ctx.lineTo(x + sw * 0.5, hz.y + 0.55);
-        ctx.lineTo(x + sw, hz.y + 0.10);
+      ctx.fillStyle = '#202026'; ctx.fillRect(hz.x0, hz.y, hz.x1 - hz.x0, 0.14);
+      ctx.fillStyle = '#e5e5ec'; ctx.beginPath();
+      for (let x = hz.x0; x < hz.x1 - 0.1; x += 0.65) {
+        const sw = Math.min(0.65, hz.x1 - x);
+        ctx.moveTo(x, hz.y + 0.10); ctx.lineTo(x + sw * 0.5, hz.y + 0.55); ctx.lineTo(x + sw, hz.y + 0.10);
       }
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
+      ctx.closePath(); ctx.fill(); ctx.restore();
     }
   }
 
@@ -2354,148 +1217,231 @@
     const P = CONFIG.palette;
     for (const ob of activeTrack.obstacles) {
       if (ob.type !== 'pipe' && ob.type !== 'box') continue;
-      ctx.save();
-      ctx.translate(ob.x, ob.y);
-      ctx.rotate(ob.angle || 0);
+      ctx.save(); ctx.translate(ob.x, ob.y); ctx.rotate(ob.angle || 0);
       if (ob.type === 'pipe') {
-        ctx.fillStyle = P.pipeOuter;
-        ctx.beginPath(); ctx.arc(0, 0, ob.r, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = P.pipeMid;
-        ctx.beginPath(); ctx.arc(0, 0, ob.r * 0.72, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = P.pipeCore;
-        ctx.beginPath(); ctx.arc(0, 0, ob.r * 0.42, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = P.pipeRim;
-        ctx.lineWidth = 0.055;
+        ctx.fillStyle = P.pipeOuter; ctx.beginPath(); ctx.arc(0, 0, ob.r, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = P.pipeMid;   ctx.beginPath(); ctx.arc(0, 0, ob.r * 0.72, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = P.pipeCore;  ctx.beginPath(); ctx.arc(0, 0, ob.r * 0.42, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = P.pipeRim; ctx.lineWidth = 0.055;
         ctx.beginPath(); ctx.arc(0, 0, ob.r - 0.02, 0.35, Math.PI - 0.35); ctx.stroke();
       } else {
-        ctx.fillStyle = P.pipeOuter;
-        ctx.fillRect(-ob.w / 2, -ob.h / 2, ob.w, ob.h);
-        ctx.fillStyle = P.pipeRim;
-        ctx.fillRect(-ob.w / 2, ob.h / 2 - 0.06, ob.w, 0.06);
+        ctx.fillStyle = P.pipeOuter; ctx.fillRect(-ob.w / 2, -ob.h / 2, ob.w, ob.h);
+        ctx.fillStyle = P.pipeRim;   ctx.fillRect(-ob.w / 2, ob.h / 2 - 0.06, ob.w, 0.06);
       }
       ctx.restore();
     }
   }
 
   function drawDynamicObstacles() {
-    // 1. Boost Strips
     for (const b of boostPads) {
-      ctx.save();
-      ctx.translate(b.x, b.y);
-      ctx.rotate(b.angle || 0);
-      ctx.fillStyle = '#18181d';
-      ctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h);
-      ctx.fillStyle = '#f2f2f5';
-      ctx.fillRect(-b.w / 2, b.h / 2 - 0.04, b.w, 0.04);
-
+      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.angle || 0);
+      ctx.fillStyle = '#18181d'; ctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h);
+      ctx.fillStyle = '#f2f2f5'; ctx.fillRect(-b.w / 2, b.h / 2 - 0.04, b.w, 0.04);
       const scroll = (simTime * 5) % 1.2;
-      ctx.strokeStyle = '#f2f2f5';
-      ctx.lineWidth = 0.07;
-      ctx.beginPath();
+      ctx.strokeStyle = '#f2f2f5'; ctx.lineWidth = 0.07; ctx.beginPath();
       for (let x = -b.w / 2 + 0.4 + scroll; x < b.w / 2 - 0.4; x += 1.2) {
-        ctx.moveTo(x - 0.25, 0.14);
-        ctx.lineTo(x + 0.10, 0.32);
-        ctx.lineTo(x - 0.25, 0.50);
+        ctx.moveTo(x - 0.25, 0.14); ctx.lineTo(x + 0.10, 0.32); ctx.lineTo(x - 0.25, 0.50);
       }
-      ctx.stroke();
-      ctx.restore();
+      ctx.stroke(); ctx.restore();
     }
 
-    // 2. Bounce Pads
     for (const bp of bouncePads) {
-      ctx.save();
-      ctx.translate(bp.x, bp.y);
-      ctx.rotate(bp.angle || 0);
+      ctx.save(); ctx.translate(bp.x, bp.y); ctx.rotate(bp.angle || 0);
       const lift = bp.flash * 0.22;
-      ctx.fillStyle = '#24242a';
-      ctx.fillRect(-bp.w / 2, -bp.h / 2, bp.w, bp.h);
-      ctx.strokeStyle = '#8b8b94';
-      ctx.lineWidth = 0.06;
-      ctx.beginPath();
+      ctx.fillStyle = '#24242a'; ctx.fillRect(-bp.w / 2, -bp.h / 2, bp.w, bp.h);
+      ctx.strokeStyle = '#8b8b94'; ctx.lineWidth = 0.06; ctx.beginPath();
       ctx.moveTo(-bp.w * 0.32, 0); ctx.lineTo(-bp.w * 0.32, 0.12 + lift);
       ctx.moveTo( bp.w * 0.32, 0); ctx.lineTo( bp.w * 0.32, 0.12 + lift);
       ctx.stroke();
       ctx.fillStyle = bp.flash > 0.1 ? '#ffffff' : '#d8d8e0';
-      ctx.fillRect(-bp.w / 2, bp.h / 2 + lift - 0.02, bp.w, 0.10);
-      ctx.restore();
+      ctx.fillRect(-bp.w / 2, bp.h / 2 + lift - 0.02, bp.w, 0.10); ctx.restore();
     }
 
-    // 3. Crumbling Fracture Bridges
     for (const cr of crumbles) {
       const p = cr.body.getPosition();
-      const shakeX = cr.state === 'shaking' ? Math.sin(cr.timer * 80) * 0.05 : 0;
-      const shakeY = cr.state === 'shaking' ? Math.cos(cr.timer * 65) * 0.03 : 0;
-      ctx.save();
-      ctx.translate(p.x + shakeX, p.y + shakeY);
-      ctx.rotate(cr.body.getAngle());
+      const sx = cr.state === 'shaking' ? Math.sin(cr.timer * 80) * 0.05 : 0;
+      const sy = cr.state === 'shaking' ? Math.cos(cr.timer * 65) * 0.03 : 0;
+      ctx.save(); ctx.translate(p.x + sx, p.y + sy); ctx.rotate(cr.body.getAngle());
       ctx.fillStyle = cr.state === 'shaking' ? '#2c2c35' : '#1b1b21';
       ctx.fillRect(-cr.w / 2, -cr.h / 2, cr.w, cr.h);
-      // Fracture crack lines
-      ctx.strokeStyle = cr.state === 'shaking' ? '#ffffff' : '#787882';
-      ctx.lineWidth = 0.045;
+      ctx.strokeStyle = cr.state === 'shaking' ? '#ffffff' : '#787882'; ctx.lineWidth = 0.045;
       ctx.beginPath();
-      ctx.moveTo(-cr.w * 0.35,  cr.h * 0.4);
-      ctx.lineTo(-cr.w * 0.18,  0.0);
-      ctx.lineTo(-cr.w * 0.25, -cr.h * 0.45);
-      ctx.moveTo( cr.w * 0.10,  cr.h * 0.4);
-      ctx.lineTo( cr.w * 0.02, -0.04);
-      ctx.lineTo( cr.w * 0.18, -cr.h * 0.45);
+      ctx.moveTo(-cr.w * 0.35, cr.h * 0.4); ctx.lineTo(-cr.w * 0.18, 0); ctx.lineTo(-cr.w * 0.25, -cr.h * 0.45);
+      ctx.moveTo(cr.w * 0.1, cr.h * 0.4); ctx.lineTo(cr.w * 0.02, -0.04); ctx.lineTo(cr.w * 0.18, -cr.h * 0.45);
       ctx.stroke();
       ctx.fillStyle = cr.state === 'shaking' ? '#ffffff' : '#c8c8d2';
-      ctx.fillRect(-cr.w / 2, cr.h / 2 - 0.06, cr.w, 0.06);
-      ctx.restore();
+      ctx.fillRect(-cr.w / 2, cr.h / 2 - 0.06, cr.w, 0.06); ctx.restore();
     }
 
-    // 4. Moving Elevators / Sliding Bridges
     for (const m of movers) {
-      const c = m.cfg;
-      ctx.strokeStyle = 'rgba(235, 235, 240, 0.14)';
-      ctx.lineWidth = 0.05;
-      ctx.setLineDash([0.25, 0.25]);
-      ctx.beginPath();
-      ctx.moveTo(c.x - (c.ampX || 0), c.y - (c.ampY || 0));
-      ctx.lineTo(c.x + (c.ampX || 0), c.y + (c.ampY || 0));
-      ctx.stroke();
+      const c = m.cfg, p = m.body.getPosition();
+      ctx.strokeStyle = 'rgba(235, 235, 240, 0.14)'; ctx.lineWidth = 0.05; ctx.setLineDash([0.25, 0.25]);
+      ctx.beginPath(); ctx.moveTo(c.x - (c.ampX || 0), c.y - (c.ampY || 0)); ctx.lineTo(c.x + (c.ampX || 0), c.y + (c.ampY || 0)); ctx.stroke();
       ctx.setLineDash([]);
-
-      const p = m.body.getPosition();
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.fillStyle = '#18181d';
-      ctx.fillRect(-c.w / 2, -c.h / 2, c.w, c.h);
-      ctx.strokeStyle = '#484852';
-      ctx.lineWidth = 0.05;
-      ctx.beginPath();
-      for (let x = -c.w / 2 + 0.2; x < c.w / 2 - 0.5; x += 0.9) {
-        ctx.moveTo(x, -c.h / 2 + 0.05);
-        ctx.lineTo(x + 0.5, c.h / 2 - 0.08);
-      }
+      ctx.save(); ctx.translate(p.x, p.y);
+      ctx.fillStyle = '#18181d'; ctx.fillRect(-c.w / 2, -c.h / 2, c.w, c.h);
+      ctx.strokeStyle = '#484852'; ctx.lineWidth = 0.05; ctx.beginPath();
+      for (let x = -c.w / 2 + 0.2; x < c.w / 2 - 0.5; x += 0.9) { ctx.moveTo(x, -c.h / 2 + 0.05); ctx.lineTo(x + 0.5, c.h / 2 - 0.08); }
       ctx.stroke();
-      ctx.fillStyle = '#ededf2';
-      ctx.fillRect(-c.w / 2, c.h / 2 - 0.07, c.w, 0.07);
-      ctx.restore();
+      ctx.fillStyle = '#ededf2'; ctx.fillRect(-c.w / 2, c.h / 2 - 0.07, c.w, 0.07); ctx.restore();
     }
 
-    // 5. Swinging Wrecking Ball Pendulums
     for (const pen of pendulums) {
-      const c = pen.cfg;
-      const p = pen.body.getPosition();
-      // Overhead pivot mount & steel cable
-      ctx.strokeStyle = '#75757e';
-      ctx.lineWidth = 0.06;
+      const c = pen.cfg, p = pen.body.getPosition();
+      ctx.strokeStyle = '#75757e'; ctx.lineWidth = 0.06;
+      ctx.beginPath(); ctx.moveTo(c.x, c.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+      ctx.fillStyle = '#d8d8e0'; ctx.beginPath(); ctx.arc(c.x, c.y, 0.16, 0, Math.PI * 2); ctx.fill();
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(pen.body.getAngle());
+      ctx.fillStyle = '#151519'; ctx.beginPath(); ctx.arc(0, 0, c.r, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#f2f2f5'; ctx.lineWidth = 0.06; ctx.beginPath(); ctx.arc(0, 0, c.r - 0.03, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = '#6f6f78'; ctx.lineWidth = 0.05; ctx.beginPath();
+      ctx.moveTo(-c.r * 0.5, 0); ctx.lineTo(c.r * 0.5, 0); ctx.moveTo(0, -c.r * 0.5); ctx.lineTo(0, c.r * 0.5);
+      ctx.stroke(); ctx.restore();
+    }
+
+    for (const s of seesaws) {
+      const p = s.body.getPosition();
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(s.body.getAngle());
+      ctx.fillStyle = '#1d1d22'; ctx.fillRect(-s.w / 2, -s.h / 2, s.w, s.h);
+      ctx.fillStyle = '#ededf2'; ctx.fillRect(-s.w / 2, s.h / 2 - 0.07, s.w, 0.07); ctx.restore();
+      ctx.fillStyle = '#09090b'; ctx.beginPath(); ctx.arc(s.x, s.y, 0.26, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#f2f2f5'; ctx.lineWidth = 0.06; ctx.beginPath(); ctx.arc(s.x, s.y, 0.26, 0, Math.PI * 2); ctx.stroke();
+    }
+
+    for (const sp of spinners) {
+      const p = sp.body.getPosition();
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(sp.body.getAngle());
+      ctx.fillStyle = '#24242a'; ctx.fillRect(-sp.r, -0.20, sp.r * 2, 0.40); ctx.fillRect(-0.20, -sp.r, 0.40, sp.r * 2);
+      ctx.strokeStyle = '#e5e5ec'; ctx.lineWidth = 0.05; ctx.strokeRect(-sp.r, -0.20, sp.r * 2, 0.40); ctx.strokeRect(-0.20, -sp.r, 0.40, sp.r * 2);
+      ctx.fillStyle = '#09090b'; ctx.beginPath(); ctx.arc(0, 0, 0.34, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore();
+    }
+
+    for (const cr of crates) {
+      const p = cr.body.getPosition();
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(cr.body.getAngle());
+      ctx.fillStyle = '#222228'; ctx.fillRect(-cr.w / 2, -cr.h / 2, cr.w, cr.h);
+      ctx.strokeStyle = '#9a9aa4'; ctx.lineWidth = 0.045;
+      ctx.strokeRect(-cr.w / 2 + 0.02, -cr.h / 2 + 0.02, cr.w - 0.04, cr.h - 0.04);
       ctx.beginPath();
-      ctx.moveTo(c.x, c.y);
-      ctx.lineTo(p.x, p.y);
-      ctx.stroke();
+      ctx.moveTo(-cr.w / 2 + 0.06, -cr.h / 2 + 0.06); ctx.lineTo(cr.w / 2 - 0.06, cr.h / 2 - 0.06);
+      ctx.moveTo(cr.w / 2 - 0.06, -cr.h / 2 + 0.06); ctx.lineTo(-cr.w / 2 + 0.06, cr.h / 2 - 0.06);
+      ctx.stroke(); ctx.restore();
+    }
 
-      ctx.fillStyle = '#d8d8e0';
-      ctx.beginPath(); ctx.arc(c.x, c.y, 0.16, 0, Math.PI * 2); ctx.fill();
+    for (const dr of drums) {
+      const p = dr.body.getPosition();
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(dr.body.getAngle());
+      ctx.fillStyle = '#1b1b21'; ctx.beginPath(); ctx.arc(0, 0, dr.r, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#dcdce4'; ctx.lineWidth = 0.05; ctx.beginPath(); ctx.arc(0, 0, dr.r - 0.025, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = '#6f6f78'; ctx.lineWidth = 0.04; ctx.beginPath();
+      ctx.moveTo(-dr.r * 0.65, 0); ctx.lineTo(dr.r * 0.65, 0); ctx.moveTo(0, -dr.r * 0.65); ctx.lineTo(0, dr.r * 0.65);
+      ctx.stroke(); ctx.restore();
+    }
+  }
 
-      // Heavy steel ball
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate(pen.body.getAngle());
-      ctx.fillStyle = '#151519';
-      ctx.beginPath(); ctx.arc(0, 0, c.r, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = '#f2f2f5';
-      ctx.lineWidth
+  function drawCheckpointsAndFinish() {
+    activeTrack.checkpoints.forEach((cp, idx) => {
+      if (idx === 0) return;
+      ctx.save(); ctx.translate(cp.x, cp.groundY);
+      ctx.fillStyle = idx <= currentCheckpoint ? '#f2f2f5' : '#42424a';
+      ctx.fillRect(-0.04, 0, 0.08, 2.8);
+      ctx.beginPath(); ctx.moveTo(0.04, 2.8); ctx.lineTo(1.1, 2.45); ctx.lineTo(0.04, 2.1); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    });
+    ctx.save(); ctx.translate(activeTrack.finishX, activeTrack.finishY);
+    ctx.fillStyle = '#f2f2f5'; ctx.fillRect(-0.08, 0, 0.16, 4.4); ctx.fillRect(-0.35, 3.6, 0.7, 0.8);
+    ctx.scale(1, -1); ctx.font = '900 0.55px Impact, sans-serif'; ctx.fillStyle = '#070708'; ctx.fillText('FIN', -0.28, -3.78);
+    ctx.restore();
+  }
+
+  function drawParticles() {
+    for (const p of particles) {
+      const a = Math.max(0, p.life / p.maxLife);
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+      ctx.fillStyle = p.hue !== undefined ? `hsla(${p.hue}, 100%, 65%, ${a * 0.9})` : `rgba(${p.shade},${p.shade},${p.shade},${a * 0.75})`;
+      ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.65);
+      ctx.restore();
+    }
+  }
+
+  function drawWheel(body) {
+    const P = CONFIG.palette, r = CONFIG.bike.wheelRadius, p = body.getPosition();
+    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(body.getAngle());
+    ctx.fillStyle = P.tire; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = P.tread;
+    for (let i = 0; i < 12; i++) { ctx.save(); ctx.rotate((i / 12) * Math.PI * 2); ctx.fillRect(r - 0.04, -0.04, 0.05, 0.08); ctx.restore(); }
+    ctx.strokeStyle = P.rim; ctx.lineWidth = 0.045; ctx.beginPath(); ctx.arc(0, 0, r * 0.65, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = P.spokes; ctx.lineWidth = 0.025; ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI;
+      ctx.moveTo(Math.cos(a) * -(r * 0.63), Math.sin(a) * -(r * 0.63));
+      ctx.lineTo(Math.cos(a) * (r * 0.63), Math.sin(a) * (r * 0.63));
+    }
+    ctx.stroke();
+    ctx.fillStyle = P.rotor; ctx.beginPath(); ctx.arc(0, 0, r * 0.25, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawBikeAndRider() {
+    const P = CONFIG.palette;
+    drawWheel(rearWheel); drawWheel(frontWheel);
+    const rw = rearWheel.getPosition(), fw = frontWheel.getPosition();
+    const pivotRear = chassis.getWorldPoint(pl.Vec2(-0.32, -0.02)), forkCrown = chassis.getWorldPoint(pl.Vec2(0.56, 0.34));
+
+    ctx.strokeStyle = P.swingarm; ctx.lineWidth = 0.085; ctx.lineCap = 'butt';
+    ctx.beginPath(); ctx.moveTo(pivotRear.x, pivotRear.y); ctx.lineTo(rw.x, rw.y); ctx.stroke();
+    ctx.strokeStyle = P.forkStanchion; ctx.lineWidth = 0.075;
+    ctx.beginPath(); ctx.moveTo(forkCrown.x, forkCrown.y); ctx.lineTo(fw.x, fw.y); ctx.stroke();
+    ctx.strokeStyle = P.forkSlider; ctx.lineWidth = 0.105;
+    ctx.beginPath(); ctx.moveTo(forkCrown.x, forkCrown.y); ctx.lineTo(forkCrown.x + (fw.x - forkCrown.x) * 0.55, forkCrown.y + (fw.y - forkCrown.y) * 0.55); ctx.stroke();
+
+    const cp = chassis.getPosition();
+    ctx.save(); ctx.translate(cp.x, cp.y); ctx.rotate(chassis.getAngle());
+    ctx.fillStyle = P.engine; ctx.beginPath(); ctx.moveTo(-0.38, -0.06); ctx.lineTo(0.32, -0.05); ctx.lineTo(0.28, 0.22); ctx.lineTo(-0.30, 0.20); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = P.exhaust; ctx.lineWidth = 0.06; ctx.beginPath(); ctx.moveTo(0.18, 0.05); ctx.lineTo(-0.22, 0.02); ctx.lineTo(-0.82, 0.24); ctx.stroke();
+    ctx.fillStyle = P.fairing; ctx.beginPath(); ctx.moveTo(-0.88, 0.28); ctx.lineTo(-0.25, 0.26); ctx.lineTo(0.18, 0.36); ctx.lineTo(0.58, 0.44); ctx.lineTo(0.95, 0.22); ctx.lineTo(0.56, 0.30); ctx.lineTo(0.15, 0.22); ctx.lineTo(-0.40, 0.14); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = P.seat; ctx.beginPath(); ctx.moveTo(-0.55, 0.27); ctx.lineTo(0.08, 0.34); ctx.lineTo(0.12, 0.27); ctx.lineTo(-0.52, 0.22); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = P.bars; ctx.lineWidth = 0.055; ctx.beginPath(); ctx.moveTo(0.52, 0.38); ctx.lineTo(0.46, 0.56); ctx.lineTo(0.38, 0.58); ctx.stroke();
+    ctx.restore();
+
+    const footPeg = chassis.getWorldPoint(pl.Vec2(-0.18, -0.02)), grip = chassis.getWorldPoint(pl.Vec2(0.40, 0.57));
+    const hip = riderBody.getWorldPoint(pl.Vec2(-0.04, -0.34)), shoulder = riderBody.getWorldPoint(pl.Vec2(0.06, 0.24)), head = riderBody.getWorldPoint(pl.Vec2(0.07, 0.48));
+    const knee = solveIK(hip.x, hip.y, footPeg.x, footPeg.y, 0.38, 0.38, -1), elbow = solveIK(shoulder.x, shoulder.y, grip.x, grip.y, 0.32, 0.32, 1);
+
+    ctx.strokeStyle = P.riderLegs; ctx.lineWidth = 0.14; ctx.lineJoin = 'miter';
+    ctx.beginPath(); ctx.moveTo(hip.x, hip.y); ctx.lineTo(knee.x, knee.y); ctx.lineTo(footPeg.x, footPeg.y); ctx.stroke();
+
+    ctx.save(); ctx.translate(riderBody.getPosition().x, riderBody.getPosition().y); ctx.rotate(riderBody.getAngle());
+    ctx.fillStyle = P.riderTorso; ctx.beginPath(); ctx.moveTo(-0.14, -0.36); ctx.lineTo(0.12, -0.36); ctx.lineTo(0.18, 0.28); ctx.lineTo(-0.14, 0.28); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = P.riderStripe; ctx.fillRect(-0.12, -0.05, 0.28, 0.12); ctx.restore();
+
+    ctx.strokeStyle = P.riderArms; ctx.lineWidth = 0.10;
+    ctx.beginPath(); ctx.moveTo(shoulder.x, shoulder.y); ctx.lineTo(elbow.x, elbow.y); ctx.lineTo(grip.x, grip.y); ctx.stroke();
+
+    ctx.save(); ctx.translate(head.x, head.y); ctx.rotate(riderBody.getAngle());
+    ctx.fillStyle = P.helmet; ctx.beginPath(); ctx.arc(0, 0, 0.21, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = P.visor; ctx.beginPath(); ctx.moveTo(0.02, 0.14); ctx.lineTo(0.30, 0.11); ctx.lineTo(0.18, 0.20); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = P.goggles; ctx.fillRect(0.08, -0.02, 0.14, 0.08); ctx.restore();
+  }
+
+  function formatTime(sec) {
+    const mins = Math.floor(sec / 60), rem = sec % 60;
+    return `${String(mins).padStart(2, '0')}:${rem.toFixed(2).padStart(5, '0')}`;
+  }
+
+  selectTrack(0);
+  connectMultiplayer();
+
+  function loop(now) {
+    const frameDt = Math.min((now - lastTime) / 1000, CONFIG.physics.maxFrameDt);
+    lastTime = now; accumulator += frameDt;
+    while (accumulator >= CONFIG.physics.fixedDt) { stepPhysics(CONFIG.physics.fixedDt); accumulator -= CONFIG.physics.fixedDt; }
+    sendLocalPose(now);
+    render(now);
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
